@@ -39,3 +39,7 @@
 `curl -X POST http://localhost:5000/test-custom \
   -H "Content-Type: application/json" \
   -d '{"subject":"Question sur facturation", "body":"Bonjour, je n ai pas reçu ma facture du mois dernier. Pouvez-vous me l envoyer? Merci."}'`
+
+  `curl -X POST http://localhost:5000/test-custom \
+  -H "Content-Type: application/json" \
+  -d '{"subject":"URGENT: Service Production Hors Service", "body":"Notre application principale en production est inaccessible depuis 15 minutes. Aucun utilisateur ne peut se connecter. Intervention immédiate requise."}'`

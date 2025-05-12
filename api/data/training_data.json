@@ -83,6 +83,594 @@
       "body": "J'ai reçu un email suspect qui semble provenir de votre plateforme. Pouvez-vous vérifier?",
       "category": "security",
       "priority": "medium"
+    },
+    {
+      "subject": "Bug d'affichage sur le tableau de bord",
+      "body": "Quand j'ouvre le tableau de bord, certains widgets n'affichent pas les données correctement. Ils restent vides.",
+      "category": "support_technique",
+      "priority": "medium"
+    },
+    {
+      "subject": "Question sur l'utilisation de la fonctionnalité X",
+      "body": "Pouvez-vous m'expliquer comment fonctionne exactement la fonctionnalité de synchronisation automatique ? La documentation est un peu légère.",
+      "category": "information",
+      "priority": "low"
+    },
+    {
+      "subject": "Incident: Erreur 500 récurrente",
+      "body": "Nous rencontrons fréquemment des erreurs 500 lors de la soumission de formulaires. Cela affecte nos utilisateurs.",
+      "category": "incident",
+      "priority": "medium"
+    },
+    {
+      "subject": "Demande d'accès administrateur pour [Nom Projet]",
+      "body": "Je suis responsable du projet [Nom Projet] et j'ai besoin des droits administrateur sur l'application pour configurer les intégrations.",
+      "category": "access_request",
+      "priority": "medium"
+    },
+    {
+      "subject": "Problème: Facture doublement débitée",
+      "body": "J'ai été débité deux fois pour la facture numéro F12345. Pouvez-vous corriger cela ?",
+      "category": "billing",
+      "priority": "high"
+    },
+    {
+      "subject": "URGENT: Brèche de sécurité potentielle détectée",
+      "body": "Nos systèmes de surveillance ont détecté une activité suspecte qui pourrait indiquer une tentative d'intrusion.",
+      "category": "urgent",
+      "priority": "high"
+    },
+    {
+      "subject": "Suggestion: Ajouter un filtre de recherche par date",
+      "body": "Il serait très utile de pouvoir filtrer les résultats de recherche par date de création ou de modification.",
+      "category": "suggestion",
+      "priority": "low"
+    },
+    {
+      "subject": "Incident: Perte de données signalée",
+      "body": "Certains utilisateurs signalent que des données récemment ajoutées ont disparu de la base.",
+      "category": "incident",
+      "priority": "high"
+    },
+    {
+      "subject": "Demande: Accès VPN pour nouvel employé",
+      "body": "Veuillez créer un compte VPN et accorder l'accès à [Nom Employé] qui commence lundi.",
+      "category": "access_request",
+      "priority": "low"
+    },
+    {
+      "subject": "À vérifier: Email promotionnel mal formaté",
+      "body": "L'email promotionnel que j'ai reçu aujourd'hui contient des caractères étranges et les images ne s'affichent pas.",
+      "category": "à_vérifier",
+      "priority": "medium"
+    },
+    {
+      "subject": "Problème de performance général",
+      "body": "L'application est très lente aujourd'hui. Le temps de chargement des pages est excessif.",
+      "category": "support_technique",
+      "priority": "medium"
+    },
+    {
+      "subject": "Question sur les limites d'utilisation",
+      "body": "Quelle est la limite de stockage pour mon plan actuel ?",
+      "category": "information",
+      "priority": "low"
+    },
+    {
+      "subject": "Incident: API externe ne répond pas",
+      "body": "Notre intégration avec le service de paiement est cassée car l'API tierce ne répond plus.",
+      "category": "incident",
+      "priority": "high"
+    },
+    {
+      "subject": "Demande d'accès au serveur staging",
+      "body": "J'ai besoin d'un accès temporaire au serveur de staging pour déboguer un problème spécifique.",
+      "category": "access_request",
+      "priority": "medium"
+    },
+    {
+      "subject": "Question sur les options de paiement",
+      "body": "Proposez-vous le paiement par virement bancaire pour les factures annuelles ?",
+      "category": "billing",
+      "priority": "low"
+    },
+    {
+      "subject": "URGENT: Attaque DDoS en cours",
+      "body": "Nos systèmes subissent une attaque par déni de service distribué. L'accès est très limité.",
+      "category": "urgent",
+      "priority": "high"
+    },
+    {
+      "subject": "Suggestion: Interface sombre (Dark mode)",
+      "body": "Beaucoup d'applications proposent un mode sombre. Ce serait agréable d'en avoir un pour réduire la fatigue oculaire.",
+      "category": "suggestion",
+      "priority": "low"
+    },
+    {
+      "subject": "Problème: Impossible d'envoyer des emails",
+      "body": "La fonctionnalité d'envoi d'emails depuis l'application ne fonctionne plus. Aucun email ne part.",
+      "category": "support_technique",
+      "priority": "medium"
+    },
+    {
+      "subject": "Question: Compatibilité avec navigateur X",
+      "body": "Est-ce que votre application est entièrement compatible avec la dernière version de Microsoft Edge ?",
+      "category": "information",
+      "priority": "low"
+    },
+    {
+      "subject": "Incident: Affichage incorrect des données dans les rapports",
+      "body": "Les chiffres affichés dans les rapports exportés ne correspondent pas à ceux de l'interface.",
+      "category": "incident",
+      "priority": "medium"
+    },
+    {
+      "subject": "Demande: Création de compte utilisateur pour [email]",
+      "body": "Veuillez créer un nouveau compte utilisateur pour [email] avec les droits standard.",
+      "category": "access_request",
+      "priority": "low"
+    },
+    {
+      "subject": "Question sur la politique de remboursement",
+      "body": "Quelle est votre politique de remboursement si je ne suis pas satisfait du service ?",
+      "category": "billing",
+      "priority": "low"
+    },
+    {
+      "subject": "URGENT: Données personnelles exposées?",
+      "body": "J'ai reçu une alerte indiquant que mon mot de passe pourrait avoir été compromis. Faut-il s'inquiéter pour mes données ?",
+      "category": "urgent",
+      "priority": "high"
+    },
+    {
+      "subject": "Suggestion: Améliorer la recherche interne",
+      "body": "La recherche interne est basique. Ce serait bien d'avoir des options de recherche plus avancées.",
+      "category": "suggestion",
+      "priority": "low"
+    },
+    {
+      "subject": "Incident: Plantage de l'application mobile sur iOS",
+      "body": "L'application mobile crash systématiquement au démarrage sur mon iPhone (iOS 16).",
+      "category": "incident",
+      "priority": "medium"
+    },
+    {
+      "subject": "À vérifier: Message d'erreur incompréhensible",
+      "body": "J'ai un message d'erreur avec un code technique '0x80070005' que je ne comprends pas.",
+      "category": "à_vérifier",
+      "priority": "medium"
+    },
+    {
+      "subject": "Problème avec l'upload de fichiers",
+      "body": "Impossible d'uploader des fichiers de plus de 10 Mo. Le chargement s'arrête à 99%.",
+      "category": "support_technique",
+      "priority": "medium"
+    },
+    {
+      "subject": "Question sur l'intégration API",
+      "body": "Existe-t-il un SDK pour faciliter l'intégration de votre API dans une application Python ?",
+      "category": "information",
+      "priority": "low"
+    },
+    {
+      "subject": "Incident: Déconnexion fréquente des utilisateurs",
+      "body": "Les utilisateurs sont déconnectés de manière aléatoire tout au long de la journée.",
+      "category": "incident",
+      "priority": "medium"
+    },
+    {
+      "subject": "Demande d'extension de licence",
+      "body": "Notre licence actuelle arrive à expiration. Nous souhaiterions l'étendre pour une année supplémentaire.",
+      "category": "billing",
+      "priority": "low"
+    },
+    {
+      "subject": "URGENT: Problème d'accès critique",
+      "body": "Aucun membre de l'équipe ne peut se connecter. C'est un blocage complet.",
+      "category": "urgent",
+      "priority": "high"
+    },
+    {
+      "subject": "Suggestion: Ajouter des notifications par email pour les événements",
+      "body": "Ce serait bien de recevoir des notifications par email quand un certain événement se produit dans l'application.",
+      "category": "suggestion",
+      "priority": "low"
+    },
+    {
+      "subject": "Incident: Fonctionnalité de partage cassée",
+      "body": "Impossible de partager des documents. Le lien généré renvoie une erreur 404.",
+      "category": "incident",
+      "priority": "medium"
+    },
+    {
+      "subject": "Demande d'accès au dépôt Git",
+      "body": "J'ai besoin d'un accès en lecture/écriture au dépôt Git principal.",
+      "category": "access_request",
+      "priority": "medium"
+    },
+    {
+      "subject": "À vérifier: Compte suspendu?",
+      "body": "Mon compte semble avoir été suspendu sans préavis. Pouvez-vous vérifier?",
+      "category": "à_vérifier",
+      "priority": "medium"
+    },
+    {
+      "subject": "Problème: Affichage tronqué sur navigateurs mobiles",
+      "body": "Sur mobile, certains textes sont coupés et l'affichage n'est pas responsive.",
+      "category": "support_technique",
+      "priority": "medium"
+    },
+    {
+      "subject": "Question sur l'API de facturation",
+      "body": "Y a-t-il une API pour récupérer l'historique des factures automatiquement ?",
+      "category": "information",
+      "priority": "low"
+    },
+    {
+      "subject": "Incident: Problème de sauvegarde automatique",
+      "body": "La sauvegarde automatique des documents ne semble pas fonctionner correctement.",
+      "category": "incident",
+      "priority": "high"
+    },
+    {
+      "subject": "Demande de création de groupe d'utilisateurs",
+      "body": "Je souhaite créer un nouveau groupe 'Développeurs' pour gérer les permissions plus facilement.",
+      "category": "access_request",
+      "priority": "low"
+    },
+    {
+      "subject": "Question: Modes de paiement acceptés",
+      "body": "Quels sont les différents modes de paiement que vous acceptez pour les abonnements ?",
+      "category": "billing",
+      "priority": "low"
+    },
+    {
+      "subject": "URGENT: Vulnérabilité de sécurité signalée",
+      "body": "Nous avons été informés d'une vulnérabilité potentielle dans la version actuelle de l'application.",
+      "category": "urgent",
+      "priority": "high"
+    },
+    {
+      "subject": "Suggestion: Personnalisation de l'interface",
+      "body": "Pouvoir changer les couleurs ou le logo de l'interface pour l'adapter à notre charte graphique.",
+      "category": "suggestion",
+      "priority": "low"
+    },
+    {
+      "subject": "Problème: Erreur lors de l'exportation de données",
+      "body": "L'exportation des données au format Excel échoue avec une erreur interne.",
+      "category": "support_technique",
+      "priority": "medium"
+    },
+    {
+      "subject": "Question: Serveurs hébergés où?",
+      "body": "Dans quelle région géographique sont hébergées vos données et serveurs ?",
+      "category": "information",
+      "priority": "low"
+    },
+    {
+      "subject": "Incident: Temps de réponse très long",
+      "body": "L'application met plusieurs secondes à répondre à chaque action utilisateur.",
+      "category": "incident",
+      "priority": "medium"
+    },
+    {
+      "subject": "Demande d'accès au dashboard analytique",
+      "body": "J'ai besoin d'un accès en lecture seule au tableau de bord analytique.",
+      "category": "access_request",
+      "priority": "low"
+    },
+    {
+      "subject": "Question: Changer de plan d'abonnement",
+      "body": "Est-il possible de passer à un plan supérieur en cours de cycle de facturation ?",
+      "category": "billing",
+      "priority": "low"
+    },
+    {
+      "subject": "URGENT: Accès non autorisé détecté",
+      "body": "Nous avons détecté une tentative de connexion réussie depuis une adresse IP inconnue.",
+      "category": "urgent",
+      "priority": "high"
+    },
+    {
+      "subject": "Suggestion: Intégration avec des outils de gestion de projet (Jira, Trello)",
+      "body": "Pouvoir synchroniser les tâches avec Jira ou Trello serait un énorme avantage.",
+      "category": "suggestion",
+      "priority": "low"
+    },
+    {
+      "subject": "Problème: Filtres de recherche ne fonctionnent pas",
+      "body": "Les filtres appliqués dans la liste des éléments n'ont aucun effet sur les résultats affichés.",
+      "category": "support_technique",
+      "priority": "medium"
+    },
+    {
+      "subject": "Question: Support multi-langues ?",
+      "body": "Votre application est-elle disponible en plusieurs langues ?",
+      "category": "information",
+      "priority": "low"
+    },
+    {
+      "subject": "Incident: Envoi d'emails en masse échoue",
+      "body": "Quand j'essaie d'envoyer une campagne d'emails, j'obtiens une erreur après quelques envois.",
+      "category": "incident",
+      "priority": "medium"
+    },
+    {
+      "subject": "Demande de réinitialisation de mot de passe pour un utilisateur",
+      "body": "L'utilisateur [Nom Utilisateur] a oublié son mot de passe et ne peut pas utiliser la fonction de réinitialisation automatique. Pouvez-vous le faire manuellement ?",
+      "category": "access_request",
+      "priority": "medium"
+    },
+    {
+      "subject": "Question: Détails sur les frais supplémentaires",
+      "body": "Quels sont les frais éventuels qui pourraient s'ajouter à mon abonnement de base ?",
+      "category": "billing",
+      "priority": "low"
+    },
+    {
+      "subject": "URGENT: Problème d'authentification SSO",
+      "body": "Notre système d'authentification unique (SSO) ne fonctionne plus, empêchant tous les utilisateurs internes de se connecter.",
+      "category": "urgent",
+      "priority": "high"
+    },
+    {
+      "subject": "Suggestion: Permettre l'ajout de pièces jointes aux commentaires",
+      "body": "Actuellement, on ne peut pas ajouter de fichiers aux commentaires. Ce serait utile pour partager des captures d'écran ou des documents.",
+      "category": "suggestion",
+      "priority": "low"
+    },
+    {
+      "subject": "Problème: Notifications non reçues",
+      "body": "Je ne reçois aucune notification, que ce soit par email ou dans l'application.",
+      "category": "support_technique",
+      "priority": "medium"
+    },
+    {
+      "subject": "Question: Période d'essai disponible?",
+      "body": "Est-il possible de tester votre service gratuitement avant de souscrire un abonnement ?",
+      "category": "information",
+      "priority": "low"
+    },
+    {
+      "subject": "Incident: Données synchronisées de manière incorrecte",
+      "body": "Les données synchronisées entre l'application web et l'application mobile ne sont pas identiques.",
+      "category": "incident",
+      "priority": "medium"
+    },
+    {
+      "subject": "Demande de désactivation de compte",
+      "body": "Veuillez désactiver le compte de [Nom Utilisateur] qui a quitté l'entreprise.",
+      "category": "access_request",
+      "priority": "low"
+    },
+    {
+      "subject": "Question: Facturation au prorata",
+      "body": "Si j'ajoute des utilisateurs en cours de mois, la facturation est-elle calculée au prorata ?",
+      "category": "billing",
+      "priority": "low"
+    },
+    {
+      "subject": "URGENT: Problème majeur de sécurité",
+      "body": "Une faille critique a été découverte dans notre système par une source externe.",
+      "category": "urgent",
+      "priority": "high"
+    },
+    {
+      "subject": "Suggestion: Rapports personnalisables",
+      "body": "Pouvoir créer des rapports avec les données que nous choisissons serait très utile.",
+      "category": "suggestion",
+      "priority": "low"
+    },
+    {
+      "subject": "Problème: Erreur lors de la modification d'un élément",
+      "body": "Quand j'essaie d'éditer un élément existant, je reçois une erreur serveur.",
+      "category": "support_technique",
+      "priority": "medium"
+    },
+    {
+      "subject": "Question: Intégration avec Zapier?",
+      "body": "Est-il possible d'automatiser certaines tâches en utilisant Zapier ?",
+      "category": "information",
+      "priority": "low"
+    },
+     {
+      "subject": "Incident: Liens internes cassés après maj",
+      "body": "Après la dernière mise à jour, plusieurs liens à l'intérieur de l'application renvoient vers des pages inexistantes.",
+      "category": "incident",
+      "priority": "medium"
+    },
+     {
+      "subject": "Demande d'accès à un projet spécifique",
+      "body": "J'ai besoin d'accès au projet 'Migration V2' pour commencer à travailler dessus. Mon nom d'utilisateur est [username].",
+      "category": "access_request",
+      "priority": "medium"
+    },
+    {
+      "subject": "Question sur le renouvellement automatique",
+      "body": "Mon abonnement se renouvelle-t-il automatiquement ou dois-je le faire manuellement ?",
+      "category": "billing",
+      "priority": "low"
+    },
+    {
+      "subject": "URGENT: Données de prod corrompues",
+      "body": "Suite à un script mal exécuté, certaines données critiques en production semblent corrompues. Nécessite une restauration immédiate.",
+      "category": "urgent",
+      "priority": "high"
+    },
+    {
+      "subject": "Suggestion: Ajouter un système de vote pour les suggestions",
+      "body": "Pourriez-vous mettre en place un système où les utilisateurs peuvent voter pour les suggestions de nouvelles fonctionnalités ?",
+      "category": "suggestion",
+      "priority": "low"
+    },
+    {
+      "subject": "À vérifier: Activité suspecte sur mon compte",
+      "body": "J'ai reçu un email m'informant d'une connexion à mon compte depuis un pays lointain alors que je suis chez moi. Est-ce légitime ?",
+      "category": "security",
+      "priority": "high"
+    },
+    {
+      "subject": "Problème: Champ de texte limité",
+      "body": "Le champ de description des tâches ne permet pas d'entrer plus de 200 caractères, ce qui est insuffisant.",
+      "category": "support_technique",
+      "priority": "medium"
+    },
+     {
+      "subject": "Question: Roadmap des futures fonctionnalités",
+      "body": "Avez-vous une feuille de route publique où l'on peut voir les fonctionnalités prévues ?",
+      "category": "information",
+      "priority": "low"
+    },
+    {
+      "subject": "Incident: Problème de performance BD",
+      "body": "La base de données semble rencontrer des problèmes de performance, les requêtes sont très lentes.",
+      "category": "incident",
+      "priority": "high"
+    },
+    {
+      "subject": "Demande de suppression de données",
+      "body": "Conformément au RGPD, je demande la suppression de toutes les données personnelles associées à mon compte.",
+      "category": "access_request",
+      "priority": "medium"
+    },
+    {
+      "subject": "Question: Payer par carte bancaire d'entreprise",
+      "body": "Puis-je utiliser une carte bancaire d'entreprise pour le paiement ?",
+      "category": "billing",
+      "priority": "low"
+    },
+    {
+      "subject": "URGENT: Problème de sécurité critique",
+      "body": "Une faille permettant l'accès non autorisé aux données client a été découverte.",
+      "category": "urgent",
+      "priority": "high"
+    },
+    {
+      "subject": "Suggestion: Notifications configurables",
+      "body": "Permettre aux utilisateurs de choisir quels types de notifications ils souhaitent recevoir.",
+      "category": "suggestion",
+      "priority": "low"
+    },
+    {
+      "subject": "Problème: Affichage incorrect sur mobile",
+      "body": "L'application mobile ne s'affiche pas correctement sur mon téléphone Android.",
+      "category": "support_technique",
+      "priority": "medium"
+    },
+    {
+      "subject": "Question: Comment faire un backup?",
+      "body": "Y a-t-il un moyen d'exporter toutes nos données pour faire une sauvegarde locale ?",
+      "category": "information",
+      "priority": "low"
+    },
+    {
+      "subject": "Incident: Le système de chat intégré est en panne",
+      "body": "Le chat entre utilisateurs ne fonctionne plus depuis ce matin.",
+      "category": "incident",
+      "priority": "medium"
+    },
+    {
+      "subject": "Demande d'augmentation de quota",
+      "body": "Notre espace de stockage est presque plein. Pourrions-nous augmenter notre quota ?",
+      "category": "billing",
+      "priority": "medium"
+    },
+    {
+      "subject": "À vérifier: Étranges tentatives de connexion",
+      "body": "Je vois beaucoup de tentatives de connexion échouées dans les logs de sécurité. Est-ce normal ?",
+      "category": "security",
+      "priority": "medium"
+    },
+     {
+      "subject": "Problème: Erreur lors de la création d'un nouvel utilisateur",
+      "body": "Quand j'essaie d'ajouter un nouvel utilisateur via l'interface admin, j'obtiens un message d'erreur générique.",
+      "category": "support_technique",
+      "priority": "medium"
+    },
+    {
+      "subject": "Question: Démarrer avec l'API",
+      "body": "Où puis-je trouver les informations nécessaires pour commencer à utiliser votre API ?",
+      "category": "information",
+      "priority": "low"
+    },
+    {
+      "subject": "Incident: Fonctionnalité de rapport cassée",
+      "body": "L'exportation des rapports ne fonctionne plus. Le bouton ne réagit pas.",
+      "category": "incident",
+      "priority": "medium"
+    },
+    {
+      "subject": "Demande de transfert de propriété d'un compte",
+      "body": "Je souhaite transférer la propriété du compte de [Ancien Propriétaire] à [Nouveau Propriétaire].",
+      "category": "access_request",
+      "priority": "low"
+    },
+     {
+      "subject": "Question: Facture non reçue",
+      "body": "Je n'ai toujours pas reçu la facture pour le mois en cours. Pouvez-vous me la renvoyer ?",
+      "category": "billing",
+      "priority": "low"
+    },
+    {
+      "subject": "URGENT: Problème d'accès base de données production",
+      "body": "Impossible de se connecter à la base de données de production. Les applications sont à l'arrêt.",
+      "category": "urgent",
+      "priority": "high"
+    },
+    {
+      "subject": "Suggestion: Intégration avec des services de stockage cloud (Dropbox, GDrive)",
+      "body": "Pouvoir lier des fichiers directement depuis Dropbox ou Google Drive serait très pratique.",
+      "category": "suggestion",
+      "priority": "low"
+    },
+     {
+      "subject": "À vérifier: Performances inhabituelles",
+      "body": "L'application est beaucoup plus rapide que d'habitude aujourd'hui, est-ce lié à une mise à jour ou un potentiel problème ?",
+      "category": "à_vérifier",
+      "priority": "low"
+    },
+    {
+      "subject": "Problème: Liens de réinitialisation de mot de passe ne fonctionnent pas",
+      "body": "Quand j'utilise le lien de réinitialisation, je suis redirigé vers une page d'erreur 404.",
+      "category": "support_technique",
+      "priority": "medium"
+    },
+     {
+      "subject": "Question: Contacter le support technique",
+      "body": "Quel est le meilleur moyen de contacter le support technique en cas d'urgence ?",
+      "category": "information",
+      "priority": "low"
+    },
+     {
+      "subject": "Incident: Problème de chargement des images",
+      "body": "Les images ne s'affichent pas correctement dans l'interface. Elles apparaissent cassées.",
+      "category": "incident",
+      "priority": "medium"
+    },
+     {
+      "subject": "Demande de changement de rôle utilisateur",
+      "body": "Veuillez changer le rôle de l'utilisateur [Nom Utilisateur] de 'Lecteur' à 'Editeur'.",
+      "category": "access_request",
+      "priority": "low"
+    },
+     {
+      "subject": "Question: Modifier les informations de facturation",
+      "body": "Comment puis-je mettre à jour l'adresse de facturation associée à mon compte ?",
+      "category": "billing",
+      "priority": "low"
+    },
+    {
+      "subject": "URGENT: Accès administrateur compromis",
+      "body": "Un compte administrateur semble avoir été utilisé pour accéder à des données sensibles sans autorisation.",
+      "category": "urgent",
+      "priority": "high"
+    },
+    {
+      "subject": "Suggestion: Ajouter des raccourcis clavier",
+      "body": "Des raccourcis clavier pour les actions fréquentes (nouvel élément, enregistrer) accéléreraient l'utilisation.",
+      "category": "suggestion",
+      "priority": "low"
     }
   ]
 }
