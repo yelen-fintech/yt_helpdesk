@@ -1,0 +1,32 @@
+services:
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    expose:
+      - "5000"
+    volumes:
+      - ./api:/app
+    environment:
+      - FLASK_ENV=production
+    restart: unless-stopped
+    networks:
+      - internal_network
+
+  imap-client:
+    build:
+      context: ./imap_api_client
+      dockerfile: Dockerfile
+    ports:
+      - "4000:4000"  # Expose le port 4000 pour l'accès externe
+    volumes:
+      - ./imap_api_client:/app
+    restart: unless-stopped
+    networks:
+      - internal_network
+    environment:
+      - API_CLASSIFIER_URL=http://api:5000/classify  # URL pour communiquer avec l'API interne
+
+networks:
+  internal_network:
+    driver: bridge

@@ -1,0 +1,88 @@
+{
+  "emails": [
+    {
+      "subject": "Problème de connexion à l'application",
+      "body": "Bonjour, je n'arrive pas à me connecter à l'application depuis ce matin. J'ai essayé de réinitialiser mon mot de passe mais ça ne fonctionne pas.",
+      "category": "support_technique",
+      "priority": "medium"
+    },
+    {
+      "subject": "Demande d'information sur vos services",
+      "body": "Bonjour, je souhaiterais obtenir plus d'informations sur vos services de cloud computing. Pouvez-vous me faire parvenir une documentation?",
+      "category": "information",
+      "priority": "low"
+    },
+    {
+      "subject": "URGENT: Serveur down en production",
+      "body": "Le serveur principal est inaccessible depuis 10 minutes. Toutes les applications sont impactées. Merci d'intervenir immédiatement.",
+      "category": "incident",
+      "priority": "high"
+    },
+    {
+      "subject": "Besoin d'accès à la base de données",
+      "body": "Pourriez-vous m'accorder les droits d'accès à la base de données client pour mon nouveau projet? Mon identifiant est JDupont.",
+      "category": "access_request",
+      "priority": "medium"
+    },
+    {
+      "subject": "Question sur la facturation",
+      "body": "Je viens de recevoir ma facture du mois dernier et je ne comprends pas pourquoi le montant a augmenté. Pouvez-vous m'expliquer?",
+      "category": "billing",
+      "priority": "medium"
+    },
+    {
+      "subject": "Problème urgent: Logiciel non fonctionnel",
+      "body": "Le logiciel de gestion des stocks est complètement bloqué et nous ne pouvons pas traiter les commandes. C'est urgent!",
+      "category": "urgent",
+      "priority": "high"
+    },
+    {
+      "subject": "Demande de modification des horaires de support",
+      "body": "Pouvez-vous étendre les horaires de support technique pour les équipes en Asie?",
+      "category": "support_technique",
+      "priority": "low"
+    },
+    {
+      "subject": "Suggestion d'amélioration",
+      "body": "J'aimerais suggérer une amélioration pour l'interface utilisateur de l'application mobile.",
+      "category": "suggestion",
+      "priority": "low"
+    },
+    {
+      "subject": "Erreur dans les données affichées",
+      "body": "Les rapports financiers montrent des chiffres incorrects pour le mois dernier. Merci de vérifier.",
+      "category": "incident",
+      "priority": "medium"
+    },
+    {
+      "subject": "Problème de paiement en ligne",
+      "body": "Je n'arrive pas à effectuer un paiement en ligne via votre plateforme. Pouvez-vous m'aider?",
+      "category": "support_technique",
+      "priority": "medium"
+    },
+    {
+      "subject": "À vérifier: Informations peu claires",
+      "body": "J'ai reçu un email de votre part, mais je ne comprends pas à quoi il se réfère. Pouvez-vous m'éclairer?",
+      "category": "à_vérifier",
+      "priority": "medium"
+    },
+    {
+      "subject": "Incident critique sur les serveurs",
+      "body": "Tous nos serveurs sont à l'arrêt suite à une mise à jour défectueuse. Besoin d'assistance immédiate.",
+      "category": "urgent",
+      "priority": "high"
+    },
+    {
+      "subject": "Demande d'accès temporaire",
+      "body": "Je souhaite avoir un accès temporaire à l'outil d'analyse pour une présentation client.",
+      "category": "access_request",
+      "priority": "low"
+    },
+    {
+      "subject": "Spam reçu via votre système",
+      "body": "J'ai reçu un email suspect qui semble provenir de votre plateforme. Pouvez-vous vérifier?",
+      "category": "security",
+      "priority": "medium"
+    }
+  ]
+}
