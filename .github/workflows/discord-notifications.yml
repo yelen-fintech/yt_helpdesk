@@ -37,19 +37,19 @@ jobs:
           for label in $(echo '${{ toJson(github.event.issue.labels.*.name) }}' | jq -r '.[]'); do
             if [[ "$label" == "priority: high" ]]; then
               PRIORITY="high"
-              WEBHOOK_SECRET="DISCORD_WEBHOOK_PRIORITY_HIGH"
+              WEBHOOK_SECRET="DISCORD_WEBHOOK_HIGH"
               COLOR="#e74c3c"
               EMOJI="🚨"
               break
             elif [[ "$label" == "priority: medium" ]]; then
               PRIORITY="medium"
-              WEBHOOK_SECRET="DISCORD_WEBHOOK_PRIORITY_MEDIUM"
+              WEBHOOK_SECRET="DISCORD_WEBHOOK_MEDIUM"
               COLOR="#f39c12"
               EMOJI="⚠️"
               break
             elif [[ "$label" == "priority: low" ]]; then
               PRIORITY="low"
-              WEBHOOK_SECRET="DISCORD_WEBHOOK_PRIORITY_LOW"
+              WEBHOOK_SECRET="DISCORD_WEBHOOK_LOW"
               COLOR="#2ecc40"
               EMOJI="✅"
               break
