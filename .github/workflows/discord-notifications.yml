@@ -1,20 +1,18 @@
-name: Discord Issue Notification (Opened/Closed/Reopened)
+name: Discord Issue Notification (Prioritized)
 
 on:
   issues:
-    types: [opened, reopened, closed] # Déclenché uniquement par ces événements principaux
+    types: [opened, reopened, closed]
 
 jobs:
-  # Job qui envoie une seule notification par issue ouverte, rouverte ou fermée
-  notify_single:
+  notify_priority:
     runs-on: ubuntu-latest
     steps:
-      # Étape 1: Déterminer le type d'action et les textes/icônes associés
       - name: Determine action type
         id: set-action
         run: |
           if [ "${{ github.event.action }}" == "opened" ] || [ "${{ github.event.action }}" == "reopened" ]; then
-            echo "action=opened_reopened" >> $GITHUB_OUTPUT # Grouper opened/reopened
+            echo "action=opened_reopened" >> $GITHUB_OUTPUT
             echo "action_verb=Ouverte/Réouverte" >> $GITHUB_OUTPUT
             echo "action_icon=🆕" >> $GITHUB_OUTPUT
             echo "notification_title_prefix=Nouvelle Issue" >> $GITHUB_OUTPUT
@@ -27,77 +25,48 @@ jobs:
             echo "footer_action_suffix=Fermée" >> $GITHUB_OUTPUT
           fi
 
-      # Étape 2: Déterminer le label de priorité et les paramètres associés
-      # Ceci est basé sur les labels présents sur l'issue au moment de l'événement (opened, reopened, or closed)
-      - name: Determine priority label
+      - name: Determine priority (priority: labels)
         id: priority-label
         run: |
-          # Liste des labels par ordre de priorité (du plus important au moins important)
-          # Le premier label trouvé définit le canal et les paramètres du message.
-          # Si aucun de ces labels spécifiques n'est présent, le cas 'default' est utilisé.
-          if [[ "${{ contains(github.event.issue.labels.*.name, 'bug') }}" == "true" ]]; then
-            echo "label=bug" >> $GITHUB_OUTPUT
-            echo "webhook_secret=DISCORD_WEBHOOK_BUG" >> $GITHUB_OUTPUT
-            echo "severity=error" >> $GITHUB_OUTPUT
-            echo "color=#e74c3c" >> $GITHUB_OUTPUT
-            echo "emoji=🐛" >> $GITHUB_OUTPUT
-            echo "category_text=Bug Report" >> $GITHUB_OUTPUT
-          elif [[ "${{ contains(github.event.issue.labels.*.name, 'help wanted') }}" == "true" ]]; then
-            echo "label=help wanted" >> $GITHUB_OUTPUT
-            echo "webhook_secret=DISCORD_WEBHOOK_HELP_WANTED" >> $GITHUB_OUTPUT
-            echo "severity=warning" >> $GITHUB_OUTPUT
-            echo "color=#f1c40f" >> $GITHUB_OUTPUT
-            echo "emoji=🤝" >> $GITHUB_OUTPUT
-            echo "category_text=Help Wanted" >> $GITHUB_OUTPUT
-          elif [[ "${{ contains(github.event.issue.labels.*.name, 'enhancement') }}" == "true" ]]; then
-            echo "label=enhancement" >> $GITHUB_OUTPUT
-            echo "webhook_secret=DISCORD_WEBHOOK_ENHANCEMENT" >> $GITHUB_OUTPUT
-            echo "severity=info" >> $GITHUB_OUTPUT
-            echo "color=#a1d995" >> $GITHUB_OUTPUT
-            echo "emoji=✨" >> $GITHUB_OUTPUT
-            echo "category_text=Enhancement" >> $GITHUB_OUTPUT
-          elif [[ "${{ contains(github.event.issue.labels.*.name, 'documentation') }}" == "true" ]]; then
-            echo "label=documentation" >> $GITHUB_OUTPUT
-            echo "webhook_secret=DISCORD_WEBHOOK_DOCUMENTATION" >> $GITHUB_OUTPUT
-            echo "severity=info" >> $GITHUB_OUTPUT
-            echo "color=#3498db" >> $GITHUB_OUTPUT
-            echo "emoji=📚" >> $GITHUB_OUTPUT
-            echo "category_text=Documentation" >> $GITHUB_OUTPUT
-          elif [[ "${{ contains(github.event.issue.labels.*.name, 'question') }}" == "true" ]]; then
-            echo "label=question" >> $GITHUB_OUTPUT
-            echo "webhook_secret=DISCORD_WEBHOOK_QUESTION" >> $GITHUB_OUTPUT
-            echo "severity=info" >> $GITHUB_OUTPUT
-            echo "color=#cc317c" >> $GITHUB_OUTPUT
-            echo "emoji=❓" >> $GITHUB_OUTPUT
-            echo "category_text=Question" >> $GITHUB_OUTPUT
-          elif [[ "${{ contains(github.event.issue.labels.*.name, 'invalid') }}" == "true" ]]; then
-            echo "label=invalid" >> $GITHUB_OUTPUT
-            echo "webhook_secret=DISCORD_WEBHOOK_INVALID" >> $GITHUB_OUTPUT
-            echo "severity=info" >> $GITHUB_OUTPUT
-            echo "color=#b60205" >> $GITHUB_OUTPUT
-            echo "emoji=🚫" >> $GITHUB_OUTPUT
-            echo "category_text=Invalid Issue" >> $GITHUB_OUTPUT
-          else
-            # Cas par défaut si aucun label spécifique n'est trouvé au moment de l'événement
-            echo "label=default" >> $GITHUB_OUTPUT
-            echo "webhook_secret=DISCORD_WEBHOOK_DEFAULT" >> $GITHUB_OUTPUT
-            echo "severity=info" >> $GITHUB_OUTPUT
-            echo "color=#95a5a6" >> $GITHUB_OUTPUT
-            echo "emoji=📋" >> $GITHUB_OUTPUT
-            echo "category_text=Général" >> $GITHUB_OUTPUT
-          fi
+          # On prend tous les labels de l'issue
+          PRIORITY="uncategorized"
+          WEBHOOK_SECRET="DISCORD_WEBHOOK_UNCATEGORIZED"
+          COLOR="#95a5a6"
+          EMOJI="📋"
 
-      # Étape 3: Envoyer la notification Discord
-      # Cette étape s'exécute pour tous les événements déclenchés (opened, reopened, closed)
+          for label in $(echo '${{ toJson(github.event.issue.labels.*.name) }}' | jq -r '.[]'); do
+            if [[ "$label" == "priority: high" ]]; then
+              PRIORITY="high"
+              WEBHOOK_SECRET="DISCORD_WEBHOOK_PRIORITY_HIGH"
+              COLOR="#e74c3c"
+              EMOJI="🚨"
+              break
+            elif [[ "$label" == "priority: medium" ]]; then
+              PRIORITY="medium"
+              WEBHOOK_SECRET="DISCORD_WEBHOOK_PRIORITY_MEDIUM"
+              COLOR="#f39c12"
+              EMOJI="⚠️"
+              break
+            elif [[ "$label" == "priority: low" ]]; then
+              PRIORITY="low"
+              WEBHOOK_SECRET="DISCORD_WEBHOOK_PRIORITY_LOW"
+              COLOR="#2ecc40"
+              EMOJI="✅"
+              break
+            fi
+          done
+
+          echo "priority=$PRIORITY" >> $GITHUB_OUTPUT
+          echo "webhook_secret=$WEBHOOK_SECRET" >> $GITHUB_OUTPUT
+          echo "color=$COLOR" >> $GITHUB_OUTPUT
+          echo "emoji=$EMOJI" >> $GITHUB_OUTPUT
+
       - name: Send notification to Discord
-        uses: rjstone/discord-webhook-notify@v1 # !!! Version 1 utilisée comme demandé !!!
+        uses: rjstone/discord-webhook-notify@v1
         with:
-          # Utilise le secret de webhook déterminé dynamiquement par l'étape priority-label
           webhookUrl: ${{ secrets[steps.priority-label.outputs.webhook_secret] }}
-          severity: ${{ steps.priority-label.outputs.severity }}
-          # Le nom d'utilisateur Discord inclut la catégorie déterminée
-          username: GitHub - ${{ steps.priority-label.outputs.category_text }}
           color: ${{ steps.priority-label.outputs.color }}
+          username: GitHub - Priority ${{ steps.priority-label.outputs.priority }}
           avatarUrl: https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png
           description: |
             ${{ steps.priority-label.outputs.emoji }} **${{ steps.set-action.outputs.notification_title_prefix }}** ${{ steps.set-action.outputs.action_icon }}
@@ -109,6 +78,6 @@ jobs:
           details: |
             ${{ steps.set-action.outputs.action == 'opened_reopened' && format('Créée par {0}', github.event.issue.user.login) ||
                  steps.set-action.outputs.action == 'closed' && format('Fermée par {0} ({1})', github.event.sender.login, github.event.issue.state_reason || 'Raison non spécifiée') }}
-            ${{ steps.priority-label.outputs.label != 'default' && format('Labels: {0}', join(github.event.issue.labels.*.name, ', ')) || '' }}
-          footer: GitHub Notification (${{ steps.set-action.outputs.footer_action_suffix }}) # Le footer indique l'action
+            ${{ steps.priority-label.outputs.priority != 'uncategorized' && format('Labels: {0}', join(github.event.issue.labels.*.name, ', ')) || '' }}
+          footer: GitHub Notification (${{ steps.set-action.outputs.footer_action_suffix }})
           text: Issue #${{ github.event.issue.number }} - ${{ steps.set-action.outputs.action_verb }}
