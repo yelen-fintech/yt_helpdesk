@@ -105,12 +105,12 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            echo "Starting application..."
+            echo "Starting application in daemon mode..."
             cd ~/yt_helpdesk
             if [ -f ./_build/prod/rel/imap_api_client/bin/imap_api_client ]; then
               source .env
-              ./_build/prod/rel/imap_api_client/bin/imap_api_client start
-              echo "Application started successfully"
+              ./_build/prod/rel/imap_api_client/bin/imap_api_client daemon
+              echo "Application started successfully in daemon mode"
             else
               echo "Error: Application binary not found!"
               exit 1
