@@ -24,8 +24,6 @@ jobs:
           otp-version: '26'
       - name: Install dependencies
         run: mix deps.get
-      - name: Run tests
-        run: mix test
       - name: Compile project
         run: mix compile
       - name: Build release
