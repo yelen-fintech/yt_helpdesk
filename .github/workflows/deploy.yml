@@ -16,7 +16,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y autoconf build-essential \
-            libssl-dev libncurses-dev libwxgtk3.0-gtk3-dev \
+            libssl-dev libncurses-dev libwxgtk3.2-dev \
             libgl1-mesa-dev libglu1-mesa-dev libpng-dev libssh-dev \
             unixodbc-dev xsltproc fop libxml2-utils libncurses5-dev \
             git curl libexpat1-dev zlib1g-dev
@@ -25,7 +25,7 @@ jobs:
         uses: erlef/setup-beam@v1
         with:
           elixir-version: '1.18'
-          otp-version: '26'     # Vérifie la version sur ton VPS
+          otp-version: '26'
 
       - name: Install dependencies
         run: mix deps.get
@@ -39,7 +39,6 @@ jobs:
       - name: Build release
         run: MIX_ENV=prod mix release
 
-      # Copie la release vers le VPS
       - name: Deploy release to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
