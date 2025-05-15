@@ -31,9 +31,9 @@ defmodule ImapApiClient.Github.GithubClient do
       # Load configuration
       config = Application.get_env(:imap_api_client, :github) || %{}
       # Fix: Changed fine_token to github_token
-      token = config[:github_token] || System.get_env("GITHUB_TOKEN")
-      owner = config[:owner] || System.get_env("GITHUB_OWNER")
-      repo = config[:repo] || System.get_env("GITHUB_REPO")
+      token = config[:github_token] || System.get_env("TOKEN")
+      owner = config[:owner] || System.get_env("OWNER")
+      repo = config[:repo] || System.get_env("REPO")
 
       # Log loaded config values (except token) for debugging
       Logger.debug("GitHub configuration - Owner: #{owner}, Repo: #{repo}")
