@@ -32,8 +32,7 @@ defmodule ImapApiClient.MixProject do
       {:exla, "~> 0.9.2"},
       {:nx, "~> 0.9.2"},
       {:axon, "~> 0.7.0"},
-      {:polaris, "~> 0.1.0"},
-      {:mock, "~> 0.3.9", only: :test}
+      {:polaris, "~> 0.1.0"}
     ]
   end
 end
