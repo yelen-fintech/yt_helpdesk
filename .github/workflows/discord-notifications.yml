@@ -28,7 +28,6 @@ jobs:
       - name: Determine priority (priority: labels)
         id: priority-label
         run: |
-          # On prend tous les labels de l'issue
           PRIORITY="uncategorized"
           WEBHOOK_SECRET="DISCORD_WEBHOOK_UNCATEGORIZED"
           COLOR="#95a5a6"
@@ -55,7 +54,6 @@ jobs:
               break
             fi
           done
-
           echo "priority=$PRIORITY" >> $GITHUB_OUTPUT
           echo "webhook_secret=$WEBHOOK_SECRET" >> $GITHUB_OUTPUT
           echo "color=$COLOR" >> $GITHUB_OUTPUT
