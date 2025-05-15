@@ -178,11 +178,9 @@ defmodule ImapApiClient.EmailManager do
 
       # Extraire les informations de l'email pour la classification
       email_info = extract_basic_email_info(message)
-      IO.inspect(email_info, label: "email info")
 
       # Utiliser le modèle de classification pour obtenir la catégorie et l'urgence
       classification_result = Model.classify_email("#{email_info.subject}\n\n#{email_info.body}")
-      IO.inspect(classification_result, label: "classification results")
 
       # Transformer le résultat de la classification pour le format attendu par MailFilter
       classification = %{
