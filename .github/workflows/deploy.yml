@@ -17,53 +17,89 @@ jobs:
             libgl1-mesa-dev libglu1-mesa-dev libpng-dev libssh-dev \
             unixodbc-dev xsltproc fop libxml2-utils libncurses5-dev \
             git curl libexpat1-dev zlib1g-dev
+      
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
         with:
           elixir-version: '1.18'
           otp-version: '26'
+      
       - name: Install dependencies
         run: mix deps.get
+      
+      - name: Run tests
+        run: mix test
+      
       - name: Compile project
         run: mix compile
+      
       - name: Build release
         run: MIX_ENV=prod mix release
-      - name: Deploy to VPS with SSH
+      
+      # Vérifier que la release existe
+      - name: Verify release
+        run: |
+          if [ -d "_build/prod/rel/imap_api_client" ]; then
+            echo "Release created successfully"
+            ls -la _build/prod/rel/imap_api_client
+          else
+            echo "Release directory not found!"
+            exit 1
+          fi
+      
+      # Déployer directement via SSH sans utiliser SCP
+      - name: Deploy and restart application
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            # Créer le répertoire cible s'il n'existe pas
-            mkdir -p /home/deploy/imap_api_client
+            # Créer le répertoire de déploiement s'il n'existe pas
+            mkdir -p ~/yt_helpdesk
             
-            # Nettoyer le répertoire temporaire si nécessaire
-            rm -rf /tmp/imap_api_client || true
-            mkdir -p /tmp/imap_api_client
-          
-      - name: Copy release to VPS
+            # Arrêter l'application si elle est en cours d'exécution
+            if [ -f ~/yt_helpdesk/_build/prod/rel/imap_api_client/bin/imap_api_client ]; then
+              echo "Stopping current application..."
+              ~/yt_helpdesk/_build/prod/rel/imap_api_client/bin/imap_api_client stop || true
+            fi
+            
+            # Sauvegarder l'ancienne release si elle existe
+            TIMESTAMP=$(date +%Y%m%d%H%M%S)
+            if [ -d ~/yt_helpdesk/_build/prod/rel/imap_api_client ]; then
+              echo "Backing up current release..."
+              mv ~/yt_helpdesk/_build/prod/rel/imap_api_client ~/yt_helpdesk/_build/prod/rel/imap_api_client_backup_$TIMESTAMP
+            fi
+            
+            echo "Deployment directory prepared"
+      
+      # Utiliser SCP pour transférer uniquement la release
+      - name: Copy release to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "_build/prod/rel/imap_api_client/*"
-          target: "/home/deploy/imap_api_client"
+          source: "_build/prod/rel/imap_api_client"
+          target: "~/yt_helpdesk/_build/prod/rel"
+          strip_components: 3
+          overwrite: true
           debug: true
       
-      - name: Restart application on VPS
+      # Démarrer l'application
+      - name: Start application
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /home/deploy/imap_api_client
-            if [ -f ./bin/imap_api_client ]; then
-              ./bin/imap_api_client stop || true
-              ./bin/imap_api_client start
+            echo "Starting application..."
+            cd ~/yt_helpdesk
+            if [ -f ./_build/prod/rel/imap_api_client/bin/imap_api_client ]; then
+              ./_build/prod/rel/imap_api_client/bin/imap_api_client start
+              echo "Application started successfully"
             else
-              echo "Release binary not found!"
+              echo "Error: Application binary not found!"
               exit 1
             fi
