@@ -24,6 +24,8 @@ defmodule ImapApiClient.MixProject do
     [
       {:hackney, "~> 1.9"},
       {:yugo, "~> 1.0"},
+      {:swoosh, "~> 1.19"},
+      {:gen_smtp, "~> 1.2"},
       {:httpoison, "~> 2.0"},
       {:jason, "~> 1.4"},
       {:bumblebee, "~> 0.6.0"},
