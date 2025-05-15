@@ -47,6 +47,8 @@ jobs:
           key: ${{ secrets.VPS_DEPLOY_KEY }}
           source: "_build/prod/rel/imap_api_client/*"
           target: "/home/deploy/imap_api_client"
+          debug: true
+
 
       - name: Restart application on VPS
         uses: appleboy/ssh-action@v0.1.10
