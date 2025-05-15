@@ -1,13 +1,10 @@
 name: Build & Deploy ImapApiClient
-
 on:
   push:
     branches: [main]
-
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -20,42 +17,49 @@ jobs:
             libgl1-mesa-dev libglu1-mesa-dev libpng-dev libssh-dev \
             unixodbc-dev xsltproc fop libxml2-utils libncurses5-dev \
             git curl libexpat1-dev zlib1g-dev
-
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
         with:
           elixir-version: '1.18'
           otp-version: '26'
-
       - name: Install dependencies
         run: mix deps.get
-
       - name: Run tests
         run: mix test
-
       - name: Compile project
         run: mix compile
-
       - name: Build release
         run: MIX_ENV=prod mix release
-
-      - name: Deploy release to VPS
+      - name: Deploy to VPS with SSH
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            # Créer le répertoire cible s'il n'existe pas
+            mkdir -p /home/deploy/imap_api_client
+            
+            # Nettoyer le répertoire temporaire si nécessaire
+            rm -rf /tmp/imap_api_client || true
+            mkdir -p /tmp/imap_api_client
+          
+      - name: Copy release to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_DEPLOY_KEY }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "_build/prod/rel/imap_api_client/*"
           target: "/home/deploy/imap_api_client"
           debug: true
-
-
+      
       - name: Restart application on VPS
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_DEPLOY_KEY }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /home/deploy/imap_api_client
             if [ -f ./bin/imap_api_client ]; then
