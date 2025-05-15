@@ -31,6 +31,6 @@ config :imap_api_client, :imap_clients, [
 ]
 
 config :imap_api_client, :github,
-  github_token: System.get_env("GITHUB_TOKEN"),
-  owner: System.get_env("GITHUB_OWNER"),
-  repo: System.get_env("GITHUB_REPO")
+  github_token: System.get_env("TOKEN"),
+  owner: System.get_env("OWNER"),
+  repo: System.get_env("REPO")
