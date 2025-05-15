@@ -25,5 +25,19 @@
 # run the container
 `docker run -it --name my-classifier-cli email-classifier:latest`
 
+
+# build for prod
+`MIX_ENV=prod mix release`
+
 # test
 `ImapApiClient.Classifier.Model.classify_email(" Bonjour, mon compte est bloqué. Pouvez-vous m'aider à le débloquer ? ")`
+
+# run in daemon
+
+`./_build/prod/rel/imap_api_client/bin/imap_api_client daemon`
+
+# start
+`_build/prod/rel/imap_api_client/bin/imap_api_client start`
+
+# stop
+`   _build/prod/rel/imap_api_client/bin/imap_api_client stop`
