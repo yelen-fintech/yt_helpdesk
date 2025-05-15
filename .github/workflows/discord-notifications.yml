@@ -24,7 +24,7 @@ jobs:
             echo "notification_title_prefix=Issue Fermée" >> $GITHUB_OUTPUT
             echo "footer_action_suffix=Fermée" >> $GITHUB_OUTPUT
           fi
-
+      
       - name: Determine priority (priority: labels)
         id: priority-label
         run: |
@@ -32,7 +32,6 @@ jobs:
           WEBHOOK_SECRET="DISCORD_WEBHOOK_UNCATEGORIZED"
           COLOR="#95a5a6"
           EMOJI="📋"
-
           for label in $(echo '${{ toJson(github.event.issue.labels.*.name) }}' | jq -r '.[]'); do
             if [[ "$label" == "priority: high" ]]; then
               PRIORITY="high"
@@ -58,7 +57,7 @@ jobs:
           echo "webhook_secret=$WEBHOOK_SECRET" >> $GITHUB_OUTPUT
           echo "color=$COLOR" >> $GITHUB_OUTPUT
           echo "emoji=$EMOJI" >> $GITHUB_OUTPUT
-
+      
       - name: Send notification to Discord
         uses: rjstone/discord-webhook-notify@v1
         with:
@@ -70,7 +69,6 @@ jobs:
             ${{ steps.priority-label.outputs.emoji }} **${{ steps.set-action.outputs.notification_title_prefix }}** ${{ steps.set-action.outputs.action_icon }}
             **Issue #${{ github.event.issue.number }}**: ${{ github.event.issue.title }}
             🔗 [Voir l'issue](${{ github.event.issue.html_url }})
-
             ---
             ${{ github.event.issue.body || 'Aucune description fournie.' }}
           details: |
