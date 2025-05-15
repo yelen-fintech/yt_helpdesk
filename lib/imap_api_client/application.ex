@@ -19,7 +19,7 @@ defmodule ImapApiClient.Application do
     children = children ++ [
       ImapApiClient.EmailManager,
       ImapApiClient.Github.GithubClient,
-      Classification.EmailClassifier
+      {ImapApiClient.Classifier.Model, []}
     ]
 
     # Démarre le superviseur

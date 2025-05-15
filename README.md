@@ -16,12 +16,6 @@
 # run
 `iex -S mix` 
 
-# test email 
-`Classification.IntegrationTest.test_email_processing()`
-
-# train model
-`Classification.ModelTrainer.train_all()`
-
 # build the container
 `docker build -t email-classifier:latest .`
 
@@ -30,3 +24,6 @@
 
 # run the container
 `docker run -it --name my-classifier-cli email-classifier:latest`
+
+# test
+`ImapApiClient.Classifier.Model.classify_email(" Bonjour, mon compte est bloqué. Pouvez-vous m'aider à le débloquer ? ")`

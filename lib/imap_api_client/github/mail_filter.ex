@@ -5,52 +5,24 @@ defmodule ImapApiClient.Github.MailFilter do
   """
 
   require Logger
-  alias Classification.EmailClassifier
   alias ImapApiClient.Github.GithubClient
 
   @doc """
-  Traite un email reçu:
+  Traite un email reçu avec la classification fournie:
   1. Extrait les infos importantes
-  2. Classifie l'email en utilisant EmailClassifier
+  2. Utilise la classification fournie par le modèle de classification
   3. Crée un ticket GitHub avec les labels appropriés
 
   Retourne {:ok, :issue_created, issue_number} si réussi
   ou {:error, reason} en cas d'échec
   """
-  def process_email(message) do
+  def process_email(message, classification) do
     try do
       # Extraire les informations pertinentes de l'email
       email_info = extract_email_info(message)
 
       # Log pour déboguer la structure extraite
-      Logger.debug("Email en traitement ...")
-
-      # Classifier l'email
-      classification = try do
-        EmailClassifier.classify(%{
-          subject: email_info.subject || "",
-          body: email_info.body || ""
-        })
-      rescue
-        # Si une erreur survient, utiliser une classification par défaut
-        e in [RuntimeError, ArgumentError] ->
-          Logger.warning("EmailClassifier error: #{inspect(e)}. Utilisation de la classification par défaut.")
-          %{
-            category: "autre",
-            priority: "medium",
-            confidence: 0.5,
-            labels: []
-          }
-      catch
-        :exit, reason ->
-          Logger.warning("EmailClassifier process exited: #{inspect(reason)}. Using default classification.")
-          %{
-            category: "autre",
-            priority: "medium",
-            confidence: 0.5,
-            labels: []
-          }
-      end
+      Logger.debug("Email en traitement avec classification: #{inspect(classification)}")
 
       Logger.info("Email classifié comme: #{classification.category} (confiance: #{classification.confidence})")
 
@@ -278,6 +250,14 @@ defmodule ImapApiClient.Github.MailFilter do
 
     # Labels basés sur la catégorie
     labels = case classification.category do
+      "spam" -> ["spam"]
+      "promotions_marketing" -> ["marketing"]
+      "personnel" -> ["personal"]
+      "professionnel_interne" -> ["internal"]
+      "support_client" -> ["support"]
+      "demande_information_question" -> ["question", "info-request"]
+      "feedback_suggestion" -> ["feedback", "suggestion"]
+      "documentation" -> ["documentation"]
       "account" -> ["account"]
       "payment" -> ["payment"]
       "technical" -> ["bug", "technical"]
