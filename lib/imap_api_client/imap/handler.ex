@@ -14,19 +14,26 @@ defmodule ImapApiClient.Imap.Handler do
 
   Affiche un log initial et log le résultat du traitement par le MailFilter.
   """
-  def handle_message(message) do
+  # In handler.ex
+def handle_message(message) do
+  default_classification = %{
+    category: "support_client",
+    priority: "medium",
+    confidence: 0.5,
+    labels: []
+  }
 
-    case MailFilter.process_email(message) do
-      {:ok, :issue_created, issue_number} ->
-        {:ok, :issue_created, issue_number}
+  case MailFilter.process_email(message, default_classification) do
+    {:ok, :issue_created, issue_number} ->
+      {:ok, :issue_created, issue_number}
 
-      {:error, reason} ->
-        {:error, :processing_failed, reason}
+    {:error, reason} ->
+      {:error, :processing_failed, reason}
 
-      other ->
-         Logger.warning("MailFilter returned unexpected result: #{inspect(other)}")
-         other
-    end
+    other ->
+      Logger.warning("MailFilter returned unexpected result: #{inspect(other)}")
+      other
   end
+end
 
 end

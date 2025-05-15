@@ -1,0 +1,57 @@
+name: Build & Deploy ImapApiClient
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: '1.18'
+          otp-version: '26'     # Vérifie la version sur ton VPS
+
+      - name: Install dependencies
+        run: mix deps.get
+
+      - name: Run tests
+        run: mix test
+
+      - name: Compile project
+        run: mix compile
+
+      - name: Build release
+        run: MIX_ENV=prod mix release
+
+      # Copie la release vers le VPS
+      - name: Deploy release to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_DEPLOY_KEY }}
+          source: "_build/prod/rel/imap_api_client/*"
+          target: "/home/deploy/imap_api_client"
+
+      - name: Restart application on VPS
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_DEPLOY_KEY }}
+          script: |
+            cd /home/deploy/imap_api_client
+            if [ -f ./bin/imap_api_client ]; then
+              ./bin/imap_api_client stop || true
+              ./bin/imap_api_client start
+            else
+              echo "Release binary not found!"
+              exit 1
+            fi

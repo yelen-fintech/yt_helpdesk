@@ -5,7 +5,10 @@ defmodule ImapApiClient.EmailManager do
 
   use GenServer
   require Logger
-  alias ImapApiClient.Imap.{Client, Handler, Filter}
+  alias ImapApiClient.Imap.Client
+  alias ImapApiClient.Imap.Filter
+  alias ImapApiClient.Classifier.Model
+  alias ImapApiClient.Github.MailFilter
   alias Swoosh.Email
 
   @email_manager_config Application.compile_env(:imap_api_client, __MODULE__, [])
@@ -131,9 +134,7 @@ defmodule ImapApiClient.EmailManager do
         {:noreply, state}
 
       {:email, _client_name, message} ->
-
         spawn_link(fn -> process_email(message) end)
-
         {:noreply, state}
 
       {:ok, :issue_created, issue_number} ->
@@ -174,18 +175,33 @@ defmodule ImapApiClient.EmailManager do
   defp process_email(message) do
     try do
       Logger.info("Traitement de l'email pour classification...")
-      result = Handler.handle_message(message)
+
+      # Extraire les informations de l'email pour la classification
+      email_info = extract_basic_email_info(message)
+      IO.inspect(email_info, label: "email info")
+
+      # Utiliser le modèle de classification pour obtenir la catégorie et l'urgence
+      classification_result = Model.classify_email("#{email_info.subject}\n\n#{email_info.body}")
+      IO.inspect(classification_result, label: "classification results")
+
+      # Transformer le résultat de la classification pour le format attendu par MailFilter
+      classification = %{
+        category: Map.get(classification_result, :predicted_category),
+        priority: Map.get(classification_result, :predicted_urgency),
+        confidence: get_confidence_from_scores(classification_result),
+        labels: []
+      }
+
+      # Transmettre le message et la classification à MailFilter
+      result = MailFilter.process_email(message, classification)
 
       case result do
         {:ok, :issue_created, issue_number} ->
           Logger.info("Email processing successful: GitHub issue ##{issue_number} created.")
 
-
         {:error, reason} ->
           Logger.error("Failed to process email: #{reason}")
 
-        unexpected ->
-          Logger.error("Unexpected result from Handler: #{inspect(unexpected)}")
       end
     rescue
       e ->
@@ -195,4 +211,86 @@ defmodule ImapApiClient.EmailManager do
     end
   end
 
+  # Extraction des informations de base de l'email pour la classification
+  defp extract_basic_email_info(message) do
+    # Fonction simplifiée pour extraire juste ce dont on a besoin pour la classification
+    subject = extract_field(message, "subject") || ""
+    body = extract_body(message) || ""
+
+    %{
+      subject: subject,
+      body: body
+    }
+  end
+
+  # Extraire un champ d'en-tête (version simplifiée)
+  defp extract_field(message, field_name) do
+    cond do
+      is_nil(message) || message == %{} ->
+        nil
+
+      Map.has_key?(message, :fields) && Map.has_key?(message.fields, String.to_atom(field_name)) ->
+        message.fields[String.to_atom(field_name)]
+
+      Map.has_key?(message, :headers) && is_list(message.headers) ->
+        Enum.find_value(message.headers, nil, fn
+          {header, value} when is_binary(header) ->
+            if String.downcase(header) == String.downcase(field_name), do: value, else: nil
+          _ -> nil
+        end)
+
+      Map.has_key?(message, String.to_atom(field_name)) ->
+        Map.get(message, String.to_atom(field_name))
+
+      true ->
+        nil
+    end
+  end
+
+# Extraire le corps du message
+defp extract_body(message) do
+  cond do
+    is_nil(message) ->
+      nil
+
+    # Si le corps est une liste (MIME parts multiples)
+    Map.has_key?(message, :body) && is_list(message.body) ->
+      # Tenter d'extraire la partie text/plain d'abord
+      Enum.find_value(message.body, fn
+        {"text/plain", _attrs, content} when is_binary(content) -> content
+        {"text/html", _attrs, content} when is_binary(content) -> content
+        _ -> nil
+      end)
+
+    Map.has_key?(message, :body) && is_binary(message.body) ->
+      message.body
+
+    Map.has_key?(message, :body) && Map.has_key?(message.body, :text) ->
+      message.body.text
+
+    Map.has_key?(message, :body) && Map.has_key?(message.body, :html) ->
+      message.body.html
+
+    true ->
+      nil
+  end
+end
+
+  # Calculer un score de confiance global à partir des scores de classification
+  defp get_confidence_from_scores(classification_result) do
+    # Obtenir le premier score de catégorie (le plus élevé)
+    category_confidence = case classification_result do
+      %{category_scores: [{_, score} | _]} -> score
+      _ -> 0.5
+    end
+
+    # Obtenir le premier score d'urgence (le plus élevé)
+    urgency_confidence = case classification_result do
+      %{urgency_scores: [{_, score} | _]} -> score
+      _ -> 0.5
+    end
+
+    # Moyenne des deux scores comme confiance globale
+    (category_confidence + urgency_confidence) / 2
+  end
 end
