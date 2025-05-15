@@ -11,6 +11,15 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y autoconf build-essential \
+            libssl-dev libncurses-dev libwxgtk3.0-gtk3-dev \
+            libgl1-mesa-dev libglu1-mesa-dev libpng-dev libssh-dev \
+            unixodbc-dev xsltproc fop libxml2-utils libncurses5-dev \
+            git curl libexpat1-dev zlib1g-dev
 
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
