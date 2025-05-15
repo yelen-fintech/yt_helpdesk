@@ -48,7 +48,7 @@ jobs:
           fi
       
       # Déployer directement via SSH sans utiliser SCP
-      - name: Deploy and restart application
+      - name: Deploy and prepare environment
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -70,6 +70,17 @@ jobs:
               echo "Backing up current release..."
               mv ~/yt_helpdesk/_build/prod/rel/imap_api_client ~/yt_helpdesk/_build/prod/rel/imap_api_client_backup_$TIMESTAMP
             fi
+
+            # Exporter les variables d'environnement
+            echo "Exporting environment variables..."
+            echo "export EMAIL_ADDRESS=${{ secrets.EMAIL_ADDRESS }}" >> ~/yt_helpdesk/.env
+            echo "export IMAP_SERVER=${{ secrets.IMAP_SERVER }}" >> ~/yt_helpdesk/.env
+            echo "export IMAP_PORT=${{ secrets.IMAP_PORT }}" >> ~/yt_helpdesk/.env
+            echo "export IMAP_USERNAME=${{ secrets.IMAP_USERNAME }}" >> ~/yt_helpdesk/.env
+            echo "export IMAP_PASSWORD=${{ secrets.IMAP_PASSWORD }}" >> ~/yt_helpdesk/.env
+            echo "export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> ~/yt_helpdesk/.env
+            echo "export GITHUB_OWNER=${{ secrets.GITHUB_OWNER }}" >> ~/yt_helpdesk/.env
+            echo "export GITHUB_REPO=${{ secrets.GITHUB_REPO }}" >> ~/yt_helpdesk/.env
             
             echo "Deployment directory prepared"
       
@@ -97,6 +108,7 @@ jobs:
             echo "Starting application..."
             cd ~/yt_helpdesk
             if [ -f ./_build/prod/rel/imap_api_client/bin/imap_api_client ]; then
+              source .env
               ./_build/prod/rel/imap_api_client/bin/imap_api_client start
               echo "Application started successfully"
             else
