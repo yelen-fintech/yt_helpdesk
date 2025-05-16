@@ -78,9 +78,9 @@ jobs:
             echo "export IMAP_PORT=\"${{ secrets.IMAP_PORT }}\"" >> ~/yt_helpdesk/.env
             echo "export IMAP_USERNAME=\"${{ secrets.IMAP_USERNAME }}\"" >> ~/yt_helpdesk/.env
             echo "export IMAP_PASSWORD=\"${{ secrets.IMAP_PASSWORD }}\"" >> ~/yt_helpdesk/.env
-            echo "export GITHUB_TOKEN=\"${{ secrets.GITHUB_TOKEN }}\"" >> ~/yt_helpdesk/.env
-            echo "export GITHUB_OWNER=\"${{ secrets.GITHUB_OWNER }}\"" >> ~/yt_helpdesk/.env
-            echo "export GITHUB_REPO=\"${{ secrets.GITHUB_REPO }}\"" >> ~/yt_helpdesk/.env
+            echo "export TOKEN=\"${{ secrets.GITHUB_TOKEN }}\"" >> ~/yt_helpdesk/.env
+            echo "export OWNER=\"${{ secrets.GITHUB_OWNER }}\"" >> ~/yt_helpdesk/.env
+            echo "export REPO=\"${{ secrets.GITHUB_REPO }}\"" >> ~/yt_helpdesk/.env
             
             echo "Deployment directory prepared"
       
