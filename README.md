@@ -34,13 +34,13 @@
 
 # run in daemon
 
-`./_build/prod/rel/imap_api_client/bin/imap_api_client daemon`
+`nohup /home/ubuntu/yt_helpdesk/_build/dev/rel/imap_api_client/bin/imap_api_client start &`
 
 # start
 `_build/prod/rel/imap_api_client/bin/imap_api_client start`
 
 # stop
-`   _build/prod/rel/imap_api_client/bin/imap_api_client stop`
+`/home/ubuntu/yt_helpdesk/_build/dev/rel/imap_api_client/bin/imap_api_client stop`
 
 # chekc if running
 `ps aux | grep imap_api_client`
@@ -51,8 +51,6 @@
 # Supprimer le dossier _build et les dépendances
 rm -rf _build deps
 
-# Récupérer à nouveau les dépendances
-mix deps.get
+# See logs
+tail -f nohup.out
 
-# Compiler
-mix compile
