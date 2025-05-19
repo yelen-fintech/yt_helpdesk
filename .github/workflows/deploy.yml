@@ -2,13 +2,16 @@ name: Build & Deploy ImapApiClient
 on:
   push:
     branches: [main]
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
+      # Étape 1 : Vérification du dépôt
       - name: Checkout repository
         uses: actions/checkout@v3
-        
+
+      # Étape 2 : Installation des dépendances système nécessaires
       - name: Install system dependencies
         run: |
           sudo apt-get update
@@ -17,26 +20,31 @@ jobs:
             libgl1-mesa-dev libglu1-mesa-dev libpng-dev libssh-dev \
             unixodbc-dev xsltproc fop libxml2-utils libncurses5-dev \
             git curl libexpat1-dev zlib1g-dev
-      
+
+      # Étape 3 : Installation de l'environnement Elixir/OTP
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
         with:
           elixir-version: '1.18'
           otp-version: '26'
-      
+
+      # Étape 4 : Installation des dépendances Elixir
       - name: Install dependencies
         run: mix deps.get
-      
+
+      # Étape 5 : Exécution des tests
       - name: Run tests
         run: mix test
-      
+
+      # Étape 6 : Compilation du projet
       - name: Compile project
         run: mix compile
-      
+
+      # Étape 7 : Création de la release
       - name: Build release
         run: MIX_ENV=prod mix release
-      
-      # Vérifier que la release existe
+
+      # Étape 8 : Vérification que la release a été créée
       - name: Verify release
         run: |
           if [ -d "_build/prod/rel/imap_api_client" ]; then
@@ -46,8 +54,8 @@ jobs:
             echo "Release directory not found!"
             exit 1
           fi
-      
-      # Déployer avec SSH
+
+      # Étape 9 : Déploiement et préparation de l'environnement sur le serveur distant
       - name: Deploy and prepare environment
         uses: appleboy/ssh-action@v0.1.10
         with:
@@ -55,36 +63,20 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            # Créer le répertoire de déploiement s'il n'existe pas
             mkdir -p ~/yt_helpdesk/_build/prod/rel
-            
-            # Arrêter l'application si elle est en cours d'exécution
+
             if [ -f ~/yt_helpdesk/_build/prod/rel/imap_api_client/bin/imap_api_client ]; then
               echo "Stopping current application..."
               ~/yt_helpdesk/_build/prod/rel/imap_api_client/bin/imap_api_client stop || true
             fi
-            
-            # Sauvegarder l'ancienne release si elle existe
+
             TIMESTAMP=$(date +%Y%m%d%H%M%S)
             if [ -d ~/yt_helpdesk/_build/prod/rel/imap_api_client ]; then
-              echo "Backing up current release..."
               mv ~/yt_helpdesk/_build/prod/rel/imap_api_client ~/yt_helpdesk/_build/prod/rel/imap_api_client_backup_$TIMESTAMP
             fi
-            
-            # Exporter les variables d'environnement dans le fichier .env
-            echo "Exporting environment variables..."
-            echo "export EMAIL_ADDRESS=${{ secrets.EMAIL_ADDRESS }}" > ~/yt_helpdesk/.env
-            echo "export IMAP_SERVER=${{ secrets.IMAP_SERVER }}" >> ~/yt_helpdesk/.env
-            echo "export IMAP_PORT=${{ secrets.IMAP_PORT }}" >> ~/yt_helpdesk/.env
-            echo "export IMAP_USERNAME=${{ secrets.IMAP_USERNAME }}" >> ~/yt_helpdesk/.env
-            echo "export IMAP_PASSWORD=${{ secrets.IMAP_PASSWORD }}" >> ~/yt_helpdesk/.env
-            echo "export GITHUB_TOKEN=${{ secrets.TOKEN }}" >> ~/yt_helpdesk/.env
-            echo "export GITHUB_OWNER=${{ secrets.OWNER }}" >> ~/yt_helpdesk/.env
-            echo "export GITHUB_REPO=${{ secrets.REPO }}" >> ~/yt_helpdesk/.env
-            
             echo "Deployment directory prepared"
-      
-      # Utiliser SCP pour transférer uniquement la release
+
+      # Étape 10 : Copie de la release sur le serveur distant
       - name: Copy release to server
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -96,8 +88,8 @@ jobs:
           strip_components: 3
           overwrite: true
           debug: true
-      
-      # Démarrer l'application
+
+      # Étape 11 : Démarrage de l'application en mode démon
       - name: Start application
         uses: appleboy/ssh-action@v0.1.10
         with:
@@ -105,12 +97,14 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            echo "Starting application..."
+            echo "Starting application in daemon mode..."
             cd ~/yt_helpdesk
             if [ -f ./_build/prod/rel/imap_api_client/bin/imap_api_client ]; then
-              source ./.env
-              ./_build/prod/rel/imap_api_client/bin/imap_api_client start
-              echo "Application started successfully"
+              ./_build/prod/rel/imap_api_client/bin/imap_api_client daemon || {
+                echo "Application failed to start in daemon mode."
+                exit 1
+              }
+              echo "Application started successfully as a daemon"
             else
               echo "Error: Application binary not found!"
               exit 1
