@@ -55,30 +55,89 @@ jobs:
             exit 1
           fi
 
-      # Étape 9 : Déploiement et préparation de l'environnement sur le serveur distant
-      - name: Deploy and prepare environment
+      # Étape 9 : Préparation et arrêt de l'application sur le serveur distant
+      - name: Prepare deployment and stop application
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            # Création du répertoire de déploiement s'il n'existe pas
             mkdir -p ~/yt_helpdesk/_build/prod/rel
-
+            
+            # Arrêt de l'application avec plusieurs méthodes (graceful puis forcé si nécessaire)
             if [ -f ~/yt_helpdesk/_build/prod/rel/imap_api_client/bin/imap_api_client ]; then
-              echo "Stopping current application..."
-              ~/yt_helpdesk/_build/prod/rel/imap_api_client/bin/imap_api_client stop || true
-              sleep 5
+              echo "Attempting to stop application gracefully..."
+              
+              # Capture du PID avant l'arrêt
+              APP_PIDS=$(pgrep -f "[i]map_api_client/bin/.*beam" || echo "")
+              if [ -n "$APP_PIDS" ]; then
+                echo "Found running application processes: $APP_PIDS"
+              fi
+
+              # Récupération du cookie Erlang actuel (pour debug)
+              COOKIE_FILE=$(find ~/yt_helpdesk/_build/prod/rel/imap_api_client -name ".cookie" 2>/dev/null || echo "")
+              if [ -n "$COOKIE_FILE" ] && [ -f "$COOKIE_FILE" ]; then
+                echo "Found Erlang cookie file: $COOKIE_FILE"
+              fi
+              
+              # Méthode 1: Arrêt local (sans RPC) via rpc_status=local
+              echo "Trying local stop method..."
+              cd ~/yt_helpdesk
+              RPC_STATUS=local ~/yt_helpdesk/_build/prod/rel/imap_api_client/bin/imap_api_client stop || true
+              sleep 3
+              
+              # Méthode 2: Arrêt en utilisant un nom de nœud spécifique
+              if pgrep -f imap_api_client > /dev/null; then
+                echo "Trying with explicit node name..."
+                NODE_NAME=$(ps aux | grep "[i]map_api_client" | grep -o "name .*@" | head -1 | sed 's/name //g' | sed 's/@$//g' || echo "")
+                if [ -n "$NODE_NAME" ]; then
+                  echo "Found node name: $NODE_NAME"
+                  cd ~/yt_helpdesk
+                  ~/yt_helpdesk/_build/prod/rel/imap_api_client/bin/imap_api_client eval "init:stop()." || true
+                  sleep 3
+                fi
+              fi
+              
+              # Méthode 3: Communication via pipe
+              if pgrep -f imap_api_client > /dev/null; then
+                echo "Trying pipe method..."
+                ~/yt_helpdesk/_build/prod/rel/imap_api_client/bin/imap_api_client stop --pipe || true
+                sleep 3
+              fi
+              
+              # Méthode 4: SIGTERM
+              if pgrep -f imap_api_client > /dev/null; then
+                echo "Sending SIGTERM to application process..."
+                pkill -TERM -f imap_api_client || true
+                sleep 5
+              fi
+              
+              # En dernier recours, force kill
               if pgrep -f imap_api_client > /dev/null; then
                 echo "Force killing lingering imap_api_client process..."
                 pkill -9 -f imap_api_client
+                sleep 2
               fi
+              
+              # Vérification finale
+              if pgrep -f imap_api_client > /dev/null; then
+                echo "WARNING: Could not stop all processes. Proceeding anyway."
+              else
+                echo "All imap_api_client processes stopped successfully."
+              fi
+            else
+              echo "No existing application found to stop."
             fi
-
+            
+            # Sauvegarde de l'ancienne version avec un timestamp
             TIMESTAMP=$(date +%Y%m%d%H%M%S)
             if [ -d ~/yt_helpdesk/_build/prod/rel/imap_api_client ]; then
+              echo "Backing up current release..."
               mv ~/yt_helpdesk/_build/prod/rel/imap_api_client ~/yt_helpdesk/_build/prod/rel/imap_api_client_backup_$TIMESTAMP
             fi
+            
             echo "Deployment directory prepared"
 
       # Étape 10 : Copie de la release sur le serveur distant
@@ -94,8 +153,8 @@ jobs:
           overwrite: true
           debug: true
 
-      # Étape 11 : Démarrage de l'application en mode daemon + vérification
-      - name: Start application
+      # Étape 11 : Démarrage de l'application
+      - name: Start application and verify
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -104,16 +163,66 @@ jobs:
           script: |
             echo "Starting application in daemon mode..."
             cd ~/yt_helpdesk
+            
             if [ -f ./_build/prod/rel/imap_api_client/bin/imap_api_client ]; then
-              ./_build/prod/rel/imap_api_client/bin/imap_api_client start --no-halt &
+              # Vérification des permissions
+              chmod +x ./_build/prod/rel/imap_api_client/bin/imap_api_client
+              
+              # Configuration pour éviter les problèmes de distribution Erlang
+              echo "Setting up environment for proper Erlang distribution..."
+              
+              # Création d'un script de démarrage personnalisé pour contrôler l'environnement
+              cat > ~/start_imap_api_client.sh << 'EOL'
+              #!/bin/bash
+              cd ~/yt_helpdesk
+              
+              # Variables d'environnement pour la distribution Erlang
+              export RELEASE_DISTRIBUTION=name
+              export RELEASE_NODE=imap_api_client@127.0.0.1
+              
+              # Pour debug
+              echo "Starting with node name: $RELEASE_NODE" >> ~/imap_startup.log
+              date >> ~/imap_startup.log
+              
+              # Démarrage avec mode daemon explicite
+              ./_build/prod/rel/imap_api_client/bin/imap_api_client daemon
+              
+              # Vérification du statut
               sleep 5
-              if pgrep -f imap_api_client > /dev/null; then
+              ./_build/prod/rel/imap_api_client/bin/imap_api_client pid >> ~/imap_startup.log 2>&1 || echo "PID check failed" >> ~/imap_startup.log
+              
+              exit 0
+              EOL
+              
+              # Permissions d'exécution
+              chmod +x ~/start_imap_api_client.sh
+              
+              # Exécuter le script de démarrage
+              echo "Executing startup script..."
+              ~/start_imap_api_client.sh
+              
+              # Attente et vérification
+              sleep 10
+              
+              # Vérification que le processus est en cours d'exécution
+              if pgrep -f "imap_api_client.*beam" > /dev/null; then
                 echo "Application started successfully as a daemon"
+                # Log des processus pour debug
+                ps aux | grep "[i]map_api_client" || echo "Process grep failed"
               else
                 echo "Error: Application process not found after start!"
+                echo "Checking logs for startup issues:"
+                echo "--- Startup log ---"
+                cat ~/imap_startup.log || echo "No startup log found"
+                echo "--- Release logs ---"
+                find ./_build/prod/rel/imap_api_client/releases -name "*.log" -type f -exec tail -n 50 {} \; || echo "No release logs found"
+                echo "--- System logs ---"
+                tail -n 100 /var/log/syslog | grep -i erlang || echo "No erlang entries in syslog"
                 exit 1
               fi
             else
               echo "Error: Application binary not found!"
               exit 1
             fi
+            
+            echo "Deployment completed successfully"
