@@ -55,7 +55,7 @@ jobs:
             exit 1
           fi
 
-      # Étape 9 : Préparation et arrêt de l'application sur le serveur distant (si nécessaire)
+      # Étape 9 : Préparation et arrêt de l'application sur le serveur distant (simplifié)
       - name: Prepare deployment environment
         uses: appleboy/ssh-action@v0.1.10
         with:
@@ -66,58 +66,12 @@ jobs:
             # Création du répertoire de déploiement s'il n'existe pas
             mkdir -p ~/yt_helpdesk/_build/prod/rel
             
-            # Vérification si l'application est en cours d'exécution
-            if pgrep -f "imap_api_client.*beam" > /dev/null; then
-              echo "Application is running, attempting to stop gracefully..."
-              
-              # Capture du PID pour référence
-              APP_PIDS=$(pgrep -f "imap_api_client.*beam")
-              echo "Found running processes: $APP_PIDS"
-              
-              # Essai des méthodes d'arrêt du plus doux au plus brutal
-              if [ -f ~/yt_helpdesk/_build/prod/rel/imap_api_client/bin/imap_api_client ]; then
-                # Méthode 1: Avec --pipe (souvent plus fiable)
-                echo "Trying pipe method..."
-                cd ~/yt_helpdesk
-                ~/yt_helpdesk/_build/prod/rel/imap_api_client/bin/imap_api_client stop --pipe || true
-                sleep 3
-                
-                # Méthode 2: Commande d'arrêt standard (si nécessaire)
-                if pgrep -f "imap_api_client.*beam" > /dev/null; then
-                  echo "Trying standard stop command..."
-                  ~/yt_helpdesk/_build/prod/rel/imap_api_client/bin/imap_api_client stop || true
-                  sleep 3
-                fi
-                
-                # Méthode 3: SIGTERM (si toujours nécessaire)
-                if pgrep -f "imap_api_client.*beam" > /dev/null; then
-                  echo "Sending SIGTERM to application process..."
-                  pkill -TERM -f "imap_api_client.*beam" || true
-                  sleep 5
-                fi
-              else
-                # Si le binaire n'est pas trouvé mais des processus existent
-                echo "Binary not found but processes exist, sending SIGTERM..."
-                pkill -TERM -f "imap_api_client.*beam" || true
-                sleep 5
-              fi
-              
-              # Dernier recours: SIGKILL
-              if pgrep -f "imap_api_client.*beam" > /dev/null; then
-                echo "Force killing lingering processes as last resort..."
-                pkill -9 -f "imap_api_client.*beam"
-                sleep 2
-              fi
-              
-              # Vérification finale
-              if pgrep -f "imap_api_client.*beam" > /dev/null; then
-                echo "WARNING: Could not stop all processes. Proceeding anyway."
-              else
-                echo "All processes stopped successfully."
-              fi
-            else
-              echo "No running application detected, proceeding with deployment."
-            fi
+            # Arrêt simple de l'application, qu'elle tourne ou non
+            echo "Tentative d'arrêt de l'application..."
+            /home/ubuntu/yt_helpdesk/_build/prod/rel/imap_api_client/bin/imap_api_client stop || true
+            
+            # Petit délai pour s'assurer que tout s'arrête correctement
+            sleep 3
             
             # Sauvegarde de l'ancienne version avec un timestamp si elle existe
             if [ -d ~/yt_helpdesk/_build/prod/rel/imap_api_client ]; then
@@ -141,7 +95,7 @@ jobs:
           overwrite: true
           debug: true
 
-      # Étape 11 : Démarrage de l'application
+      # Étape 11 : Démarrage de l'application (simplifié)
       - name: Start application and verify
         uses: appleboy/ssh-action@v0.1.10
         with:
@@ -149,21 +103,16 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            echo "Starting application in daemon mode..."
+            echo "Starting application in background mode..."
             cd ~/yt_helpdesk
             
             if [ -f ./_build/prod/rel/imap_api_client/bin/imap_api_client ]; then
               # Vérification des permissions
               chmod +x ./_build/prod/rel/imap_api_client/bin/imap_api_client
               
-              # Vérifier que l'application n'est pas déjà en cours d'exécution
-              if pgrep -f "imap_api_client.*beam" > /dev/null; then
-                echo "WARNING: Application processes already running. Proceeding anyway."
-              fi
-              
-              # Démarrage simple avec le mode daemon
-              echo "Starting application with daemon command..."
-              ./_build/prod/rel/imap_api_client/bin/imap_api_client daemon
+              # Démarrage en arrière-plan avec nohup
+              echo "Starting application with nohup..."
+              nohup ./_build/prod/rel/imap_api_client/bin/imap_api_client start &
               
               # Attente et vérification
               echo "Waiting for application to start..."
@@ -171,7 +120,7 @@ jobs:
               
               # Vérification que le processus est en cours d'exécution
               if pgrep -f "imap_api_client.*beam" > /dev/null; then
-                echo "Application started successfully as a daemon"
+                echo "Application started successfully in background"
                 echo "Running processes:"
                 ps aux | grep "[i]map_api_client" || echo "Process listing failed"
               else
