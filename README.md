@@ -47,3 +47,12 @@
 
 # heath check
 `curl http://localhost:4000/health`
+
+# Supprimer le dossier _build et les dépendances
+rm -rf _build deps
+
+# Récupérer à nouveau les dépendances
+mix deps.get
+
+# Compiler
+mix compile
