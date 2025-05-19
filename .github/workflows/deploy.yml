@@ -89,7 +89,7 @@ jobs:
           overwrite: true
           debug: true
 
-      # Étape 11 : Démarrage de l'application en mode démon
+      # Étape 11 : Démarrage de l'application en mode daemon + vérification
       - name: Start application
         uses: appleboy/ssh-action@v0.1.10
         with:
@@ -100,11 +100,15 @@ jobs:
             echo "Starting application in daemon mode..."
             cd ~/yt_helpdesk
             if [ -f ./_build/prod/rel/imap_api_client/bin/imap_api_client ]; then
-              ./_build/prod/rel/imap_api_client/bin/imap_api_client daemon || {
-                echo "Application failed to start in daemon mode."
+              ./_build/prod/rel/imap_api_client/bin/imap_api_client start --no-halt &
+              sleep 5
+              # Vérifier que le process est bien lancé
+              if pgrep -f imap_api_client > /dev/null; then
+                echo "Application started successfully as a daemon"
+              else
+                echo "Error: Application process not found after start!"
                 exit 1
-              }
-              echo "Application started successfully as a daemon"
+              fi
             else
               echo "Error: Application binary not found!"
               exit 1
