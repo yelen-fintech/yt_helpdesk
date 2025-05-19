@@ -41,3 +41,5 @@
 
 # stop
 `   _build/prod/rel/imap_api_client/bin/imap_api_client stop`
+# chekc if running
+`ps aux | grep imap_api_client`
