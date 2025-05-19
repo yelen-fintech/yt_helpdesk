@@ -73,14 +73,14 @@ jobs:
             
             # Exporter les variables d'environnement dans le fichier .env
             echo "Exporting environment variables..."
-            echo "export EMAIL_ADDRESS=\"${{ secrets.EMAIL_ADDRESS }}\"" > ~/yt_helpdesk/.env
-            echo "export IMAP_SERVER=\"${{ secrets.IMAP_SERVER }}\"" >> ~/yt_helpdesk/.env
-            echo "export IMAP_PORT=\"${{ secrets.IMAP_PORT }}\"" >> ~/yt_helpdesk/.env
-            echo "export IMAP_USERNAME=\"${{ secrets.IMAP_USERNAME }}\"" >> ~/yt_helpdesk/.env
-            echo "export IMAP_PASSWORD=\"${{ secrets.IMAP_PASSWORD }}\"" >> ~/yt_helpdesk/.env
-            echo "export GITHUB_TOKEN=\"${{ secrets.GITHUB_TOKEN }}\"" >> ~/yt_helpdesk/.env
-            echo "export GITHUB_OWNER=\"${{ secrets.GITHUB_OWNER }}\"" >> ~/yt_helpdesk/.env
-            echo "export GITHUB_REPO=\"${{ secrets.GITHUB_REPO }}\"" >> ~/yt_helpdesk/.env
+            echo "export EMAIL_ADDRESS=${{ secrets.EMAIL_ADDRESS }}" > ~/yt_helpdesk/.env
+            echo "export IMAP_SERVER=${{ secrets.IMAP_SERVER }}" >> ~/yt_helpdesk/.env
+            echo "export IMAP_PORT=${{ secrets.IMAP_PORT }}" >> ~/yt_helpdesk/.env
+            echo "export IMAP_USERNAME=${{ secrets.IMAP_USERNAME }}" >> ~/yt_helpdesk/.env
+            echo "export IMAP_PASSWORD=${{ secrets.IMAP_PASSWORD }}" >> ~/yt_helpdesk/.env
+            echo "export GITHUB_TOKEN=${{ secrets.TOKEN }}" >> ~/yt_helpdesk/.env
+            echo "export GITHUB_OWNER=${{ secrets.OWNER }}" >> ~/yt_helpdesk/.env
+            echo "export GITHUB_REPO=${{ secrets.REPO }}" >> ~/yt_helpdesk/.env
             
             echo "Deployment directory prepared"
       
@@ -107,29 +107,8 @@ jobs:
           script: |
             echo "Starting application..."
             cd ~/yt_helpdesk
-            
-            # Vérifier les valeurs des variables d'environnement
-            echo "Checking environment variables..."
-            if [ ! -f ./.env ]; then
-              echo "Error: .env file not found!"
-              exit 1
-            fi
-            
-            # Afficher les variables (sans les valeurs sensibles)
-            echo "Environment variables setup:"
-            grep -v "PASSWORD\|TOKEN" ./.env | sed 's/export //'
-            
-            # Sourcer le fichier .env pour les variables d'environnement
-            source ./.env
-            
-            # Vérifie si les variables requises sont définies
-            if [ -z "$TOKEN" ] || [ -z "$OWNER" ] || [ -z "$REPO" ] || [ -z "$IMAP_SERVER" ] || [ -z "$IMAP_USERNAME" ] || [ -z "$IMAP_PASSWORD" ]; then
-              echo "Error: Required environment variables are missing!"
-              exit 1
-            fi
-            
-            # Démarrer l'application
             if [ -f ./_build/prod/rel/imap_api_client/bin/imap_api_client ]; then
+              source ./.env
               ./_build/prod/rel/imap_api_client/bin/imap_api_client start
               echo "Application started successfully"
             else
