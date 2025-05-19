@@ -68,6 +68,11 @@ jobs:
             if [ -f ~/yt_helpdesk/_build/prod/rel/imap_api_client/bin/imap_api_client ]; then
               echo "Stopping current application..."
               ~/yt_helpdesk/_build/prod/rel/imap_api_client/bin/imap_api_client stop || true
+              sleep 5
+              if pgrep -f imap_api_client > /dev/null; then
+                echo "Force killing lingering imap_api_client process..."
+                pkill -9 -f imap_api_client
+              fi
             fi
 
             TIMESTAMP=$(date +%Y%m%d%H%M%S)
@@ -102,7 +107,6 @@ jobs:
             if [ -f ./_build/prod/rel/imap_api_client/bin/imap_api_client ]; then
               ./_build/prod/rel/imap_api_client/bin/imap_api_client start --no-halt &
               sleep 5
-              # Vérifier que le process est bien lancé
               if pgrep -f imap_api_client > /dev/null; then
                 echo "Application started successfully as a daemon"
               else
