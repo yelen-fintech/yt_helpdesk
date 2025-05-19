@@ -109,3 +109,20 @@ jobs:
               echo "Error: Application binary not found!"
               exit 1
             fi
+
+      # Étape 12 : Vérification que l'application tourne
+      - name: Check if application is running
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            echo "Checking if the application is running..."
+            sleep 5 # Attendre que l'application démarre
+            if curl -s http://localhost:4000/health | grep "OK"; then
+              echo "Application is running successfully."
+            else
+              echo "Application failed to start."
+              exit 1
+            fi
