@@ -1,4 +1,5 @@
 defmodule ImapApiClient.EmailManager do
+#
   @moduledoc """
   GenServer pour gérer l'écoute IMAP et l'envoi SMTP.
   """
