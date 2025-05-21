@@ -1,10 +1,10 @@
 defmodule ImapApiClient.Github.GithubClient do
   use GenServer
   require Logger
-  
+
   # Importer les fonctions du module MimeUtils
   alias ImapApiClient.Utils.MimeUtils
-  
+
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
@@ -117,10 +117,10 @@ defmodule ImapApiClient.Github.GithubClient do
 
     # Décoder et sanitiser le titre (le titre est peut-être déjà décodé par MailFilter)
     sanitized_title = MimeUtils.decode_mime_header(title)
-    
+
     # Traiter le corps avec la fonction spécialisée de MimeUtils
     sanitized_body = MimeUtils.convert_body_to_utf8(body)
-    
+
     # Sanitiser les labels
     sanitized_labels = Enum.map(labels, &MimeUtils.sanitize_string/1)
 
@@ -143,7 +143,7 @@ defmodule ImapApiClient.Github.GithubClient do
         Logger.error("JSON encoding error: #{Exception.message(e)}")
         Logger.error("Problematic data: title=#{inspect(sanitized_title)}, labels=#{inspect(sanitized_labels)}")
         Logger.error("Body preview: #{String.slice(to_string(sanitized_body), 0..100)}")
-        
+
         # Essayer une version dégradée
         Jason.encode!(%{
           title: if(is_binary(sanitized_title), do: sanitized_title, else: "Untitled Issue"),
@@ -169,8 +169,8 @@ defmodule ImapApiClient.Github.GithubClient do
     url = "#{state.base_api_url}/#{issue_number}"
     headers = state.base_headers ++ [{"Content-Type", "application/json"}]
 
-    # Sanitizer les données pour s'assurer qu'elles sont en UTF-8 valide
-    sanitized_data = MimeUtils.sanitize_map(data)
+    sanitized_data = MimeUtils.sanitize_string(data)
+
 
     payload = Jason.encode!(sanitized_data)
     Logger.debug("Updating issue ##{issue_number} at URL: #{url} with payload: #{inspect(payload)}")
