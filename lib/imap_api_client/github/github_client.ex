@@ -25,30 +25,6 @@ defmodule ImapApiClient.Github.GithubClient do
     update_issue(issue_number, %{state: "closed"})
   end
 
-  @doc """
-  Ajoute un commentaire à un ticket GitHub existant.
-  """
-  def add_comment(issue_number, comment_text) do
-    GenServer.call(__MODULE__, {:add_comment, issue_number, comment_text})
-  end
-
-  @doc """
-  Upload un fichier en tant qu'asset vers un ticket GitHub.
-
-  Arguments:
-  - issue_number: Le numéro du ticket GitHub
-  - file_path: Le chemin du fichier à uploader
-  - filename: Le nom du fichier (optionnel, par défaut le nom du fichier dans file_path)
-  - description: Une description de l'asset (optionnel)
-
-  Retourne:
-  - {:ok, response_body} si réussi
-  - {:error, reason} en cas d'échec
-  """
-  def upload_asset(issue_number, file_path, filename \\ nil, description \\ nil) do
-    GenServer.call(__MODULE__, {:upload_asset, issue_number, file_path, filename, description}, 30_000)
-  end
-
   # --- Server Callbacks ---
   @impl true
   def init(_opts) do
@@ -83,16 +59,9 @@ defmodule ImapApiClient.Github.GithubClient do
         {"User-Agent", "ElixirGitHubClientApp"}
       ]
 
-      # URL de base pour les releases (utilisée pour les pièces jointes)
-      releases_api_url = "https://api.github.com/repos/#{owner}/#{repo}/releases"
-
       state = %{
         base_api_url: base_api_url,
-        base_headers: base_headers,
-        releases_api_url: releases_api_url,
-        owner: owner,
-        repo: repo,
-        token: token
+        base_headers: base_headers
       }
 
       Logger.info("GithubClient initialized successfully.")
@@ -118,16 +87,6 @@ defmodule ImapApiClient.Github.GithubClient do
 
   @impl true
   def handle_call({:update_issue, _issue_number, _data}, _from, %{error: e} = state) do
-    {:reply, {:error, "GitHub client not properly initialized: #{Exception.message(e)}"}, state}
-  end
-
-  @impl true
-  def handle_call({:add_comment, _issue_number, _comment_text}, _from, %{error: e} = state) do
-    {:reply, {:error, "GitHub client not properly initialized: #{Exception.message(e)}"}, state}
-  end
-
-  @impl true
-  def handle_call({:upload_asset, _issue_number, _file_path, _filename, _description}, _from, %{error: e} = state) do
     {:reply, {:error, "GitHub client not properly initialized: #{Exception.message(e)}"}, state}
   end
 
@@ -230,7 +189,7 @@ defmodule ImapApiClient.Github.GithubClient do
     end
   end
 
-    @impl true
+  @impl true
   def handle_call({:update_issue, issue_number, data}, _from, state) do
     url = "#{state.base_api_url}/#{issue_number}"
     headers = state.base_headers ++ [{"Content-Type", "application/json"}]
@@ -246,218 +205,18 @@ defmodule ImapApiClient.Github.GithubClient do
         other
     end
 
-    Logger.debug("Updating issue ##{issue_number} with: #{inspect(sanitized_data)}")
+    payload = Jason.encode!(sanitized_data)
+    Logger.debug("Updating issue ##{issue_number} at URL: #{url} with payload: #{inspect(payload)}")
 
-    case Jason.encode(sanitized_data) do
-      {:ok, encoded_data} ->
-        case HTTPoison.patch(url, encoded_data, headers) do
-          {:ok, %HTTPoison.Response{status_code: code, body: body}} when code in 200..299 ->
-            {:reply, {:ok, Jason.decode!(body)}, state}
-          {:ok, %HTTPoison.Response{status_code: status_code, body: body}} ->
-            Logger.error("Error updating issue ##{issue_number}: Status #{status_code}, Body: #{inspect(body)}")
-            {:reply, {:error, "GitHub API error: #{status_code} - #{body}"}, state}
-          {:error, %HTTPoison.Error{reason: reason}} ->
-            Logger.error("HTTP Error updating issue ##{issue_number}: #{inspect(reason)}")
-            {:reply, {:error, "HTTP Error: #{inspect(reason)}"}, state}
-        end
-      {:error, reason} ->
-        Logger.error("Failed to encode issue data: #{inspect(reason)}")
-        {:reply, {:error, "JSON encoding error: #{inspect(reason)}"}, state}
-    end
-  end
-
-  @impl true
-  def handle_call({:add_comment, issue_number, comment_text}, _from, state) do
-    url = "#{state.base_api_url}/#{issue_number}/comments"
-    headers = state.base_headers ++ [{"Content-Type", "application/json"}]
-
-    # Sanitize the comment text
-    sanitized_comment = comment_text |> MimeUtils.sanitize_string()
-
-    # Prepare the payload
-    payload = %{body: sanitized_comment}
-
-    case Jason.encode(payload) do
-      {:ok, encoded_payload} ->
-        case HTTPoison.post(url, encoded_payload, headers) do
-          {:ok, %HTTPoison.Response{status_code: code, body: body}} when code in 200..299 ->
-            {:reply, {:ok, Jason.decode!(body)}, state}
-          {:ok, %HTTPoison.Response{status_code: status_code, body: body}} ->
-            Logger.error("Error adding comment to issue ##{issue_number}: Status #{status_code}, Body: #{inspect(body)}")
-            {:reply, {:error, "GitHub API error: #{status_code} - #{body}"}, state}
-          {:error, %HTTPoison.Error{reason: reason}} ->
-            Logger.error("HTTP Error adding comment to issue ##{issue_number}: #{inspect(reason)}")
-            {:reply, {:error, "HTTP Error: #{inspect(reason)}"}, state}
-        end
-      {:error, reason} ->
-        Logger.error("Failed to encode comment data: #{inspect(reason)}")
-        {:reply, {:error, "JSON encoding error: #{inspect(reason)}"}, state}
-    end
-  end
-
-  @impl true
-  def handle_call({:upload_asset, issue_number, file_path, filename, description}, _from, state) do
-    # Pour GitHub, nous devons d'abord créer une release si elle n'existe pas déjà,
-    # puis télécharger le fichier comme un asset de cette release
-
-    # 1. Vérifier si le fichier existe
-    case File.exists?(file_path) do
-      false ->
-        Logger.error("File not found: #{file_path}")
-        {:reply, {:error, "File not found"}, state}
-
-      true ->
-        # 2. Obtenir des informations sur le fichier
-        filename = filename || Path.basename(file_path)
-        file_size = File.stat!(file_path).size
-
-        # Vérifier si le fichier est trop grand (max 100MB pour GitHub, mais nous mettons une limite prudente)
-        if file_size > 50_000_000 do # 50MB
-          Logger.error("File too large (#{file_size} bytes): #{filename}")
-          {:reply, {:error, "File too large. GitHub limit is 100MB"}, state}
-        else
-          # 3. Obtenir le type MIME du fichier
-          mime_type = get_mime_type(filename)
-          Logger.debug("Uploading file: #{filename} (#{mime_type}, #{file_size} bytes) to issue ##{issue_number}")
-
-          # 4. Vérifier s'il existe une release pour ce numéro d'issue
-          release_tag = "issue-#{issue_number}-assets"
-          release_result = find_or_create_release(state, release_tag, issue_number)
-
-          case release_result do
-            {:ok, release_data} ->
-              # 5. Télécharger le fichier comme asset de la release
-              upload_result = upload_to_release(state, release_data, file_path, filename, mime_type)
-
-              case upload_result do
-                {:ok, asset_data} ->
-                  # 6. Ajouter un commentaire à l'issue avec le lien vers l'asset
-                  browser_url = asset_data["browser_download_url"]
-                  comment_text = "File uploaded: [#{filename}](#{browser_url})"
-                  if description, do: comment_text = comment_text <> "\n\n" <> description
-
-                  # Ajouter le commentaire mais ne pas bloquer la réponse sur son résultat
-                  spawn(fn -> add_comment(issue_number, comment_text) end)
-
-                  {:reply, {:ok, asset_data}, state}
-
-                {:error, reason} ->
-                  Logger.error("Failed to upload asset: #{inspect(reason)}")
-                  {:reply, {:error, reason}, state}
-              end
-
-            {:error, reason} ->
-              Logger.error("Failed to find/create release: #{inspect(reason)}")
-              {:reply, {:error, reason}, state}
-          end
-        end
-    end
-  end
-
-  # Trouver ou créer une release pour le stockage d'assets
-  defp find_or_create_release(state, tag, issue_number) do
-    url = state.releases_api_url <> "/tags/#{tag}"
-    headers = state.base_headers
-
-    # Vérifier si la release existe déjà
-    case HTTPoison.get(url, headers) do
-      {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
-        # La release existe
-        {:ok, Jason.decode!(body)}
-
-      _other ->
-        # Créer une nouvelle release
-        create_url = state.releases_api_url
-        headers = headers ++ [{"Content-Type", "application/json"}]
-
-        payload = %{
-          tag_name: tag,
-          name: "Assets for Issue ##{issue_number}",
-          body: "This is an automatic release created to store assets for Issue ##{issue_number}",
-          draft: false
-        }
-
-        case Jason.encode(payload) do
-          {:ok, encoded_payload} ->
-            case HTTPoison.post(create_url, encoded_payload, headers) do
-              {:ok, %HTTPoison.Response{status_code: code, body: resp_body}} when code in 200..299 ->
-                {:ok, Jason.decode!(resp_body)}
-
-              {:ok, %HTTPoison.Response{status_code: status_code, body: error_body}} ->
-                {:error, "GitHub API error: #{status_code} - #{error_body}"}
-
-              {:error, %HTTPoison.Error{reason: reason}} ->
-                {:error, "HTTP Error: #{inspect(reason)}"}
-            end
-
-          {:error, reason} ->
-            {:error, "JSON encoding error: #{inspect(reason)}"}
-        end
-    end
-  end
-
-  # Télécharger un fichier vers une release
-  defp upload_to_release(state, release_data, file_path, filename, mime_type) do
-    upload_url = String.replace(release_data["upload_url"], "{?name,label}", "")
-    upload_url = upload_url <> "?name=#{URI.encode_www_form(filename)}"
-
-    headers = state.base_headers ++ [
-      {"Content-Type", mime_type},
-      {"Content-Length", "#{File.stat!(file_path).size}"}
-    ]
-
-    # Lire le contenu du fichier
-    case File.read(file_path) do
-      {:ok, file_content} ->
-        # Télécharger le fichier
-        case HTTPoison.post(upload_url, file_content, headers) do
-          {:ok, %HTTPoison.Response{status_code: code, body: body}} when code in 200..299 ->
-            {:ok, Jason.decode!(body)}
-
-          {:ok, %HTTPoison.Response{status_code: status_code, body: error_body}} ->
-            {:error, "GitHub API error: #{status_code} - #{error_body}"}
-
-          {:error, %HTTPoison.Error{reason: reason}} ->
-            {:error, "HTTP Error: #{inspect(reason)}"}
-        end
-
-      {:error, reason} ->
-        {:error, "Failed to read file: #{inspect(reason)}"}
-    end
-  end
-
-  # Déterminer le type MIME d'un fichier en fonction de son extension
-  defp get_mime_type(filename) do
-    extension = Path.extname(filename) |> String.downcase()
-
-    case extension do
-      ".pdf" -> "application/pdf"
-      ".txt" -> "text/plain"
-      ".html" -> "text/html"
-      ".htm" -> "text/html"
-      ".json" -> "application/json"
-      ".xml" -> "application/xml"
-      ".zip" -> "application/zip"
-      ".doc" -> "application/msword"
-      ".docx" -> "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-      ".xls" -> "application/vnd.ms-excel"
-      ".xlsx" -> "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-      ".ppt" -> "application/vnd.ms-powerpoint"
-      ".pptx" -> "application/vnd.openxmlformats-officedocument.presentationml.presentation"
-      ".gif" -> "image/gif"
-      ".jpg" -> "image/jpeg"
-      ".jpeg" -> "image/jpeg"
-      ".png" -> "image/png"
-      ".svg" -> "image/svg+xml"
-      ".mp3" -> "audio/mpeg"
-      ".mp4" -> "video/mp4"
-      ".wav" -> "audio/wav"
-      ".avi" -> "video/x-msvideo"
-      ".csv" -> "text/csv"
-      ".odt" -> "application/vnd.oasis.opendocument.text"
-      ".ods" -> "application/vnd.oasis.opendocument.spreadsheet"
-      ".odp" -> "application/vnd.oasis.opendocument.presentation"
-      _ -> "application/octet-stream"  # Type par défaut
+    case HTTPoison.patch(url, payload, headers) do
+      {:ok, %HTTPoison.Response{status_code: 200, body: resp_body}} ->
+        {:reply, {:ok, Jason.decode!(resp_body)}, state}
+      {:ok, %HTTPoison.Response{status_code: status_code, body: resp_body}} ->
+        Logger.error("Error updating issue ##{issue_number}: Status #{status_code}, Body: #{inspect(resp_body)}")
+        {:reply, {:error, "Error updating issue ##{issue_number}: #{status_code} - #{resp_body}"}, state}
+      {:error, %HTTPoison.Error{reason: reason}} ->
+        Logger.error("HTTP Error updating issue ##{issue_number}: #{inspect(reason)}")
+        {:reply, {:error, "HTTP Error: #{inspect(reason)}"}, state}
     end
   end
 end
