@@ -59,9 +59,52 @@ defmodule ImapApiClient.Github.MailFilter do
       to: MimeUtils.decode_mime_header(extract_field(message, "to")),
       date: extract_field(message, "date"),
       subject: extract_field(message, "subject"),
-      body: MimeUtils.convert_body_to_utf8(extract_body(message))
+      body: extract_and_decode_body(message)
     }
   end
+
+  # Nouvelle fonction pour extraire et décoder le corps du message
+  defp extract_and_decode_body(message) do
+    body = extract_body(message)
+
+    # Déterminer l'encodage potentiel du corps
+    charset = extract_charset(message) || "utf-8"
+
+    # Convertir en utilisant le bon charset
+    case body do
+      binary when is_binary(binary) ->
+        MimeUtils.convert_body_to_utf8(binary, charset)
+      other ->
+        MimeUtils.safe_to_string(other)
+    end
+  end
+
+  # Extraction du charset depuis le message
+  defp extract_charset(message) do
+    cond do
+      # Chercher dans les en-têtes Content-Type ou similaires
+      content_type = extract_field(message, "content-type") ->
+        extract_charset_from_content_type(content_type)
+      # Essayer d'autres champs qui pourraient contenir l'information charset
+      get_in_safe(message, [:body, :charset]) ->
+        get_in(message, [:body, :charset])
+      get_in_safe(message, [:body, "charset"]) ->
+        get_in(message, [:body, "charset"])
+      get_in_safe(message, [:fields, :content_type, :charset]) ->
+        get_in(message, [:fields, :content_type, :charset])
+      true ->
+        nil
+    end
+  end
+
+  # Extraction du charset depuis un en-tête Content-Type
+  defp extract_charset_from_content_type(content_type) when is_binary(content_type) do
+    case Regex.run(~r/charset=["']?([^"';]+)["']?/i, content_type) do
+      [_, charset] -> charset
+      _ -> nil
+    end
+  end
+  defp extract_charset_from_content_type(_), do: nil
 
   # Fonctions privées
   defp extract_field(message, field_name) do
@@ -169,8 +212,11 @@ defmodule ImapApiClient.Github.MailFilter do
   defp format_ticket_body(email_info, classification) do
     from = email_info.from || "[Expéditeur inconnu]"
     date = email_info.date || "[Date inconnue]"
-    subject = email_info.subject || "[Sans sujet]"
-    body = email_info.body || "[Contenu vide]"
+    subject = MimeUtils.decode_mime_header(email_info.subject) || "[Sans sujet]"
+
+    # Le corps a déjà été traité dans extract_and_decode_body
+    body = if is_binary(email_info.body), do: email_info.body, else: MimeUtils.safe_to_string(email_info.body)
+    body = body || "[Contenu vide]"
 
     """
     ## Email Information

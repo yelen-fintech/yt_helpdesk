@@ -33,7 +33,6 @@ defmodule ImapApiClient.Github.GithubClient do
     try do
       # Load configuration
       config = Application.get_env(:imap_api_client, :github) || %{}
-      # Fix: Changed fine_token to github_token
       token = config[:github_token] || System.get_env("GITHUB_TOKEN")
       owner = config[:owner] || System.get_env("GITHUB_OWNER")
       repo = config[:repo] || System.get_env("GITHUB_REPO")
@@ -91,7 +90,6 @@ defmodule ImapApiClient.Github.GithubClient do
     {:reply, {:error, "GitHub client not properly initialized: #{Exception.message(e)}"}, state}
   end
 
-
   @impl true
   def handle_call(:list_issues, _from, state) do
     url = state.base_api_url
@@ -118,20 +116,47 @@ defmodule ImapApiClient.Github.GithubClient do
     # Décoder et sanitiser le titre (le titre est peut-être déjà décodé par MailFilter)
     sanitized_title = MimeUtils.decode_mime_header(title)
 
-    # Traiter le corps avec la fonction spécialisée de MimeUtils
-    sanitized_body = MimeUtils.convert_body_to_utf8(body)
+    # Traiter le corps en gérant spécifiquement les formats d'erreur observés dans les logs
+    sanitized_body = cond do
+      # Gérer le cas spécifique observé dans les logs: tuple avec 2 parties
+      is_tuple(body) && tuple_size(body) == 3 && elem(body, 0) == :error &&
+      is_binary(elem(body, 1)) && is_binary(elem(body, 2)) ->
+        prefix = elem(body, 1)
+        binary_data = elem(body, 2)
+        prefix <> MimeUtils.sanitize_string(binary_data)
+
+      # Cas standard pour binaire
+      is_binary(body) ->
+        MimeUtils.convert_body_to_utf8(body) |> MimeUtils.sanitize_string()
+
+      # Cas pour listes
+      is_list(body) ->
+        body |> List.to_string() |> MimeUtils.sanitize_string()
+
+      # Cas nil
+      is_nil(body) ->
+        ""
+
+      # Fallback pour tout autre cas
+      true ->
+        MimeUtils.safe_to_string(body)
+    end
+
+    # Logging sécurisé
+    safe_body_preview = if is_binary(sanitized_body),
+      do: String.slice(sanitized_body, 0..100),
+      else: inspect(sanitized_body)
+
+    Logger.debug("Sanitized title: #{inspect(sanitized_title)}")
+    Logger.debug("Sanitized body (preview): #{safe_body_preview}")
 
     # Sanitiser les labels
     sanitized_labels = Enum.map(labels, &MimeUtils.sanitize_string/1)
 
-    # Logging pour le débogage
-    Logger.debug("Sanitized title: #{inspect(sanitized_title)}")
-    Logger.debug("Sanitized body (preview): #{String.slice(to_string(sanitized_body), 0..100)}")
-
     # Construire le payload
     payload = %{
-      title: sanitized_title,
-      body: sanitized_body,
+      title: sanitized_title || "Titre non décodable",
+      body: sanitized_body || "Contenu non décodable",
       labels: sanitized_labels
     }
 
@@ -142,12 +167,12 @@ defmodule ImapApiClient.Github.GithubClient do
       e in Jason.EncodeError ->
         Logger.error("JSON encoding error: #{Exception.message(e)}")
         Logger.error("Problematic data: title=#{inspect(sanitized_title)}, labels=#{inspect(sanitized_labels)}")
-        Logger.error("Body preview: #{String.slice(to_string(sanitized_body), 0..100)}")
+        Logger.error("Body preview: #{safe_body_preview}")
 
         # Essayer une version dégradée
         Jason.encode!(%{
           title: if(is_binary(sanitized_title), do: sanitized_title, else: "Untitled Issue"),
-          body: "[Contenu original non encodable en JSON - voir les logs]",
+          body: if(is_binary(sanitized_body), do: sanitized_body, else: "[Contenu original non encodable en JSON - voir les logs]"),
           labels: Enum.filter(sanitized_labels, &is_binary/1)
         })
     end
@@ -169,8 +194,16 @@ defmodule ImapApiClient.Github.GithubClient do
     url = "#{state.base_api_url}/#{issue_number}"
     headers = state.base_headers ++ [{"Content-Type", "application/json"}]
 
-    sanitized_data = MimeUtils.sanitize_string(data)
-
+    # Sanitize all string values in the data map
+    sanitized_data = case data do
+      map when is_map(map) ->
+        Enum.into(map, %{}, fn {k, v} ->
+          {k, if(is_binary(v), do: MimeUtils.sanitize_string(v), else: v)}
+        end)
+      other ->
+        Logger.warning("Non-map data passed to update_issue: #{inspect(other)}")
+        other
+    end
 
     payload = Jason.encode!(sanitized_data)
     Logger.debug("Updating issue ##{issue_number} at URL: #{url} with payload: #{inspect(payload)}")

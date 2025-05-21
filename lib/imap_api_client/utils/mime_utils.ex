@@ -17,7 +17,11 @@ defmodule ImapApiClient.Utils.MimeUtils do
   }
 
   # -- Header decoding --
+
+  # Akismet/courrier vide/null
   def decode_mime_header(nil), do: nil
+
+  # Si header en string, potentiellement codé MIME
   def decode_mime_header(header) when is_binary(header) do
     if String.match?(header, ~r/=\?[\w\-\d]+\?[QB]\?.*?\?=/) do
       decode_encoded_header(header)
@@ -26,10 +30,24 @@ defmodule ImapApiClient.Utils.MimeUtils do
     end
   end
 
+  # Pour tuple {"Name", "addr@..."}
+  def decode_mime_header({name, addr}) do
+    "#{decode_mime_header(name)} <#{addr}>"
+  end
+
+  # Pour liste d'adresses [{..}, ...]
+  def decode_mime_header(list) when is_list(list) do
+    list
+    |> Enum.map(&decode_mime_header/1)
+    |> Enum.join(", ")
+  end
+
+  # -- Décodage du header encodé (Q/B), version basique --
   defp decode_encoded_header(header) do
-    Regex.replace(~r/=\?([\w\-\d]+)\?([QB])\?(.*?)\?=/, header, fn _, charset, encoding, content ->
-      decode_content(content, charset, encoding)
+    Regex.replace(~r/=\?([^?]+)\?([QBqb])\?([^?]*)\?=/, header, fn _full, charset, encoding, content ->
+      decode_content(content, charset, String.upcase(encoding))
     end)
+    |> sanitize_string()
   end
 
   defp decode_content(content, charset, "Q") do
@@ -41,7 +59,6 @@ defmodule ImapApiClient.Utils.MimeUtils do
       end)
     |> try_convert_to_utf8(charset)
   end
-
 
   defp decode_content(content, charset, "B") do
     case Base.decode64(content) do
@@ -77,13 +94,14 @@ defmodule ImapApiClient.Utils.MimeUtils do
     |> Enum.join("")
   end
 
-   def convert_body_to_utf8(body, charset \\ "utf-8")
-    def convert_body_to_utf8(nil, _charset), do: nil
-    def convert_body_to_utf8(body, charset) when is_binary(body), do: try_convert_to_utf8(body, charset)
-    def convert_body_to_utf8(body, _charset) when is_list(body), do: body |> List.to_string() |> sanitize_string()
-    def convert_body_to_utf8(_body, _charset), do: "[UNSUPPORTED_BODY]"
+  # --- Normalisation body mail ---
+  def convert_body_to_utf8(body), do: convert_body_to_utf8(body, "utf-8")
+  def convert_body_to_utf8(nil, _charset), do: nil
+  def convert_body_to_utf8(body, charset) when is_binary(body), do: try_convert_to_utf8(body, charset)
+  def convert_body_to_utf8(body, _charset) when is_list(body), do: body |> List.to_string() |> sanitize_string()
+  def convert_body_to_utf8(_body, _charset), do: "[UNSUPPORTED_BODY]"
 
-
+  # -- Propreté profonde pour Jason --
   def deep_sanitize(data) do
     cond do
       is_binary(data) -> sanitize_string(data)
@@ -109,6 +127,22 @@ defmodule ImapApiClient.Utils.MimeUtils do
       is_port(self) -> "port"
       is_reference(self) -> "reference"
       true -> "unknown"
+    end
+  end
+
+  def safe_to_string(value) do
+    cond do
+      is_binary(value) -> value
+      is_tuple(value) and tuple_size(value) >= 2 and elem(value, 0) == :error ->
+        case value do
+          {:error, prefix, binary_data} when is_binary(prefix) and is_binary(binary_data) ->
+            sanitize_string(prefix <> sanitize_string(binary_data))
+          {:error, message} when is_binary(message) ->
+            "Erreur: #{sanitize_string(inspect(message))}"
+          _ ->
+            "Erreur: #{inspect(value)}"
+        end
+      true -> inspect(value)
     end
   end
 end
