@@ -20,14 +20,14 @@ defmodule ImapApiClient.Imap.Handler do
       confidence: 0.5,
       labels: []
     }
-
+    
     Logger.info("Processing incoming email message")
-
+    
     case MailFilter.process_email(message, default_classification) do
       {:ok, :issue_created, issue_number} ->
         Logger.info("Successfully created GitHub issue ##{issue_number}")
         {:ok, :issue_created, issue_number}
-
+        
       {:error, reason} ->
         Logger.error("Failed to process email: #{inspect(reason)}")
         {:error, :processing_failed, reason}
