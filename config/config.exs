@@ -16,6 +16,8 @@ config :logger, level: :debug
 
 config :imap_api_client, ImapApiClient.EmailManager,
   imap_client_name: :infomaniak_imap_client,
+  attachments_enabled: true,
+  attachments_dir: "priv/attachments",
   smtp_mailer: ImapApiClient.Mailer,
   email_address: System.get_env("EMAIL_ADDRESS")
 

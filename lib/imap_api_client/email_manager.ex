@@ -16,9 +16,6 @@ defmodule ImapApiClient.EmailManager do
   @smtp_mailer Keyword.fetch!(@email_manager_config, :smtp_mailer)
   @email_address Keyword.fetch!(@email_manager_config, :email_address)
 
-  @attachments_enabled Application.compile_env(:imap_api_client, :attachments_enabled, true)
-  @attachments_dir Application.compile_env(:imap_api_client, :attachments_dir, "priv/attachments")
-
 
   def start_link(_opts) do
     GenServer.start_link(__MODULE__, :ok, name: __MODULE__)
