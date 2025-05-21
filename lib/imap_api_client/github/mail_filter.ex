@@ -13,7 +13,6 @@ defmodule ImapApiClient.Github.MailFilter do
   1. Extrait les infos importantes
   2. Utilise la classification fournie par le modèle de classification
   3. Crée un ticket GitHub avec les labels appropriés
-  4. Traite les pièces jointes si présentes
 
   Retourne {:ok, :issue_created, issue_number} si réussi
   ou {:error, reason} en cas d'échec
@@ -40,20 +39,6 @@ defmodule ImapApiClient.Github.MailFilter do
 
       # Extraire le numéro du ticket d'une façon sécurisée
       issue_number = safe_get_issue_number(issue)
-
-      # Traiter les éventuelles pièces jointes
-      attachment_result = ImapApiClient.Utils.AttachmentHandler.process_attachments(message, issue_number)
-
-      case attachment_result do
-        {:ok, []} ->
-          Logger.info("Aucune pièce jointe trouvée")
-        {:ok, attachment_urls} ->
-          Logger.info("#{length(attachment_urls)} pièce(s) jointe(s) traitée(s) avec succès")
-        {:partial, attachment_urls, errors} ->
-          Logger.warning("#{length(attachment_urls)} pièce(s) jointe(s) traitée(s), mais avec #{length(errors)} erreur(s)")
-        {:error, reason} ->
-          Logger.error("Échec du traitement des pièces jointes: #{inspect(reason)}")
-      end
 
       Logger.info("Issue ##{issue_number} created successfully")
       {:ok, :issue_created, issue_number}
