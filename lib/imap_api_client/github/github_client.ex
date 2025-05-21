@@ -112,10 +112,51 @@ defmodule ImapApiClient.Github.GithubClient do
     url = state.base_api_url
     headers = state.base_headers ++ [{"Content-Type", "application/json"}]
 
-    # Assurer que le titre et le corps sont en UTF-8 valide
-    sanitized_title = sanitize_string(title)
-    sanitized_body = sanitize_string(body)
+    # Décoder et sanitiser le titre
+    sanitized_title = decode_mime_header(title)
+    
+    # Traiter le corps selon son format
+    sanitized_body = cond do
+      is_binary(body) -> 
+        sanitize_string(body)
+      is_list(body) -> 
+        List.to_string(body) |> sanitize_string()
+      # Gérer le cas spécial des binaires (<<...>>)
+      true -> 
+        try do
+          # Essayer de le convertir en chaîne UTF-8
+          if is_binary(body) do
+            :unicode.characters_to_binary(body, :latin1, :utf8)
+          else
+            bin_body = IO.iodata_to_binary(body)
+            :unicode.characters_to_binary(bin_body, :latin1, :utf8)
+          end
+        rescue
+          e ->
+            Logger.error("Failed to convert body to UTF-8: #{Exception.message(e)}")
+            Logger.error("Body type: #{inspect(typeof(body))}")
+            Logger.error("Body preview: #{inspect(body, limit: 100)}")
+            # Fallback: traiter comme une chaîne ASCII
+            try do
+              if is_binary(body) do
+                body
+                |> :binary.bin_to_list()
+                |> Enum.filter(fn byte -> byte < 128 end)
+                |> List.to_string()
+              else
+                inspect(body)
+              end
+            rescue
+              _ -> "[Content could not be encoded properly]"
+            end
+        end
+    end
+    
     sanitized_labels = Enum.map(labels, &sanitize_string/1)
+
+    # Logging pour le débogage
+    Logger.debug("Sanitized title: #{inspect(sanitized_title)}")
+    Logger.debug("Sanitized body (preview): #{String.slice(to_string(sanitized_body), 0..100)}")
 
     # Construire le payload
     payload = %{
@@ -131,15 +172,14 @@ defmodule ImapApiClient.Github.GithubClient do
       e in Jason.EncodeError ->
         Logger.error("JSON encoding error: #{Exception.message(e)}")
         Logger.error("Problematic data: title=#{inspect(sanitized_title)}, labels=#{inspect(sanitized_labels)}")
-        Logger.error("Body preview (first 100 chars): #{String.slice(inspect(sanitized_body), 0..100)}")
-
-        # Essayer une version dégradée avec juste un résumé du corps
-        fallback_payload = Jason.encode!(%{
-          title: sanitized_title,
+        Logger.error("Body preview: #{String.slice(to_string(sanitized_body), 0..100)}")
+        
+        # Essayer une version dégradée
+        Jason.encode!(%{
+          title: if(is_binary(sanitized_title), do: sanitized_title, else: "Untitled Issue"),
           body: "[Contenu original non encodable en JSON - voir les logs]",
-          labels: sanitized_labels
+          labels: Enum.filter(sanitized_labels, &is_binary/1)
         })
-        fallback_payload
     end
 
     case HTTPoison.post(url, encoded_payload, headers) do
@@ -178,6 +218,62 @@ defmodule ImapApiClient.Github.GithubClient do
   end
 
   # ----- Helper functions for encoding sanitization -----
+
+  # Helper pour déterminer le type d'une variable
+  defp typeof(self) do
+    cond do
+      is_float(self)    -> "float"
+      is_number(self)   -> "number"
+      is_atom(self)     -> "atom"
+      is_boolean(self)  -> "boolean"
+      is_binary(self)   -> "binary"
+      is_function(self) -> "function"
+      is_list(self)     -> "list"
+      is_tuple(self)    -> "tuple"
+      is_map(self)      -> "map"
+      is_pid(self)      -> "pid"
+      is_port(self)     -> "port"
+      is_reference(self) -> "reference"
+      true              -> "unknown"
+    end
+  end
+
+  # Décode les en-têtes MIME (comme ceux encodés avec =?charset?encoding?encoded-text?=)
+  defp decode_mime_header(header) when is_binary(header) do
+    if String.match?(header, ~r/=\?[\w-]+\?[QB]\?.*?\?=/) do
+      # Trouver toutes les parties encodées
+      Regex.replace(~r/=\?([\w-]+)\?([QB])\?(.*?)\?=/, header, fn whole_match, charset, encoding, content ->
+        case encoding do
+          "Q" ->
+            # Décodage Q-encoding
+            decoded = content
+                      |> String.replace("_", " ")
+                      |> String.replace(~r/=([0-9A-F]{2})/i, fn _, hex -> 
+                         <<String.to_integer(hex, 16)>> 
+                      end)
+            
+            # Conversion vers UTF-8
+            :unicode.characters_to_binary(decoded, String.to_atom(String.downcase(charset)), :utf8)
+            
+          "B" ->
+            # Décodage Base64
+            try do
+              decoded = Base.decode64!(content)
+              :unicode.characters_to_binary(decoded, String.to_atom(String.downcase(charset)), :utf8)
+            rescue
+              _ -> whole_match  # Conserver le texte original en cas d'erreur
+            end
+            
+          _ -> whole_match
+        end
+      end)
+    else
+      # Si ce n'est pas un encodage MIME, utiliser la sanitisation normale
+      sanitize_string(header)
+    end
+  end
+  defp decode_mime_header(nil), do: nil
+  defp decode_mime_header(other), do: sanitize_string(to_string(other))
 
   # Sanitise une chaîne pour s'assurer qu'elle est en UTF-8 valide
   defp sanitize_string(nil), do: nil
