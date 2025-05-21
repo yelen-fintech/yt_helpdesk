@@ -1,7 +1,10 @@
 defmodule ImapApiClient.Github.GithubClient do
   use GenServer
   require Logger
-
+  
+  # Importer les fonctions du module MimeUtils
+  alias ImapApiClient.Utils.MimeUtils
+  
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
@@ -112,47 +115,14 @@ defmodule ImapApiClient.Github.GithubClient do
     url = state.base_api_url
     headers = state.base_headers ++ [{"Content-Type", "application/json"}]
 
-    # Décoder et sanitiser le titre
-    sanitized_title = decode_mime_header(title)
+    # Décoder et sanitiser le titre (le titre est peut-être déjà décodé par MailFilter)
+    sanitized_title = MimeUtils.decode_mime_header(title)
     
-    # Traiter le corps selon son format
-    sanitized_body = cond do
-      is_binary(body) -> 
-        sanitize_string(body)
-      is_list(body) -> 
-        List.to_string(body) |> sanitize_string()
-      # Gérer le cas spécial des binaires (<<...>>)
-      true -> 
-        try do
-          # Essayer de le convertir en chaîne UTF-8
-          if is_binary(body) do
-            :unicode.characters_to_binary(body, :latin1, :utf8)
-          else
-            bin_body = IO.iodata_to_binary(body)
-            :unicode.characters_to_binary(bin_body, :latin1, :utf8)
-          end
-        rescue
-          e ->
-            Logger.error("Failed to convert body to UTF-8: #{Exception.message(e)}")
-            Logger.error("Body type: #{inspect(typeof(body))}")
-            Logger.error("Body preview: #{inspect(body, limit: 100)}")
-            # Fallback: traiter comme une chaîne ASCII
-            try do
-              if is_binary(body) do
-                body
-                |> :binary.bin_to_list()
-                |> Enum.filter(fn byte -> byte < 128 end)
-                |> List.to_string()
-              else
-                inspect(body)
-              end
-            rescue
-              _ -> "[Content could not be encoded properly]"
-            end
-        end
-    end
+    # Traiter le corps avec la fonction spécialisée de MimeUtils
+    sanitized_body = MimeUtils.convert_body_to_utf8(body)
     
-    sanitized_labels = Enum.map(labels, &sanitize_string/1)
+    # Sanitiser les labels
+    sanitized_labels = Enum.map(labels, &MimeUtils.sanitize_string/1)
 
     # Logging pour le débogage
     Logger.debug("Sanitized title: #{inspect(sanitized_title)}")
@@ -200,7 +170,7 @@ defmodule ImapApiClient.Github.GithubClient do
     headers = state.base_headers ++ [{"Content-Type", "application/json"}]
 
     # Sanitizer les données pour s'assurer qu'elles sont en UTF-8 valide
-    sanitized_data = sanitize_map(data)
+    sanitized_data = MimeUtils.sanitize_map(data)
 
     payload = Jason.encode!(sanitized_data)
     Logger.debug("Updating issue ##{issue_number} at URL: #{url} with payload: #{inspect(payload)}")
@@ -216,111 +186,4 @@ defmodule ImapApiClient.Github.GithubClient do
         {:reply, {:error, "HTTP Error: #{inspect(reason)}"}, state}
     end
   end
-
-  # ----- Helper functions for encoding sanitization -----
-
-  # Helper pour déterminer le type d'une variable
-  defp typeof(self) do
-    cond do
-      is_float(self)    -> "float"
-      is_number(self)   -> "number"
-      is_atom(self)     -> "atom"
-      is_boolean(self)  -> "boolean"
-      is_binary(self)   -> "binary"
-      is_function(self) -> "function"
-      is_list(self)     -> "list"
-      is_tuple(self)    -> "tuple"
-      is_map(self)      -> "map"
-      is_pid(self)      -> "pid"
-      is_port(self)     -> "port"
-      is_reference(self) -> "reference"
-      true              -> "unknown"
-    end
-  end
-
-  # Décode les en-têtes MIME (comme ceux encodés avec =?charset?encoding?encoded-text?=)
-  defp decode_mime_header(header) when is_binary(header) do
-    if String.match?(header, ~r/=\?[\w-]+\?[QB]\?.*?\?=/) do
-      # Trouver toutes les parties encodées
-      Regex.replace(~r/=\?([\w-]+)\?([QB])\?(.*?)\?=/, header, fn whole_match, charset, encoding, content ->
-        case encoding do
-          "Q" ->
-            # Décodage Q-encoding
-            decoded = content
-                      |> String.replace("_", " ")
-                      |> String.replace(~r/=([0-9A-F]{2})/i, fn _, hex -> 
-                         <<String.to_integer(hex, 16)>> 
-                      end)
-            
-            # Conversion vers UTF-8
-            :unicode.characters_to_binary(decoded, String.to_atom(String.downcase(charset)), :utf8)
-            
-          "B" ->
-            # Décodage Base64
-            try do
-              decoded = Base.decode64!(content)
-              :unicode.characters_to_binary(decoded, String.to_atom(String.downcase(charset)), :utf8)
-            rescue
-              _ -> whole_match  # Conserver le texte original en cas d'erreur
-            end
-            
-          _ -> whole_match
-        end
-      end)
-    else
-      # Si ce n'est pas un encodage MIME, utiliser la sanitisation normale
-      sanitize_string(header)
-    end
-  end
-  defp decode_mime_header(nil), do: nil
-  defp decode_mime_header(other), do: sanitize_string(to_string(other))
-
-  # Sanitise une chaîne pour s'assurer qu'elle est en UTF-8 valide
-  defp sanitize_string(nil), do: nil
-  defp sanitize_string(str) when is_binary(str) do
-    try do
-      # Essayer d'abord avec latin1 (iso-8859-1) vers UTF-8
-      case :unicode.characters_to_binary(str, :latin1, :utf8) do
-        result when is_binary(result) -> result
-        _ ->
-          # Si ça échoue, essayer de nettoyer les caractères non-UTF8
-          str
-          |> String.codepoints()
-          |> Enum.filter(fn char -> String.valid?(char) end)
-          |> Enum.join("")
-      end
-    rescue
-      _ ->
-        # Fallback: traiter comme une liste de bytes et filtrer ceux qui ne sont pas valides en UTF-8
-        str
-        |> :binary.bin_to_list()
-        |> Enum.filter(fn byte -> byte < 128 end)  # Garder seulement les ASCII
-        |> List.to_string()
-    end
-  end
-  defp sanitize_string(other), do: inspect(other)
-
-  # Sanitiser une liste
-  defp sanitize_list(list) when is_list(list) do
-    Enum.map(list, fn
-      item when is_binary(item) -> sanitize_string(item)
-      item when is_map(item) -> sanitize_map(item)
-      item when is_list(item) -> sanitize_list(item)
-      item -> item
-    end)
-  end
-
-  # Sanitiser une map récursivement
-  defp sanitize_map(map) when is_map(map) do
-    Enum.reduce(map, %{}, fn {k, v}, acc ->
-      sanitized_value = cond do
-        is_binary(v) -> sanitize_string(v)
-        is_map(v) -> sanitize_map(v)
-        is_list(v) -> sanitize_list(v)
-        true -> v
-      end
-      Map.put(acc, k, sanitized_value)
-    end)
-  end
-  defp sanitize_map(other), do: other
 end
